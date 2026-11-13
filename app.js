@@ -192,12 +192,13 @@
   function markNav() { document.querySelectorAll('#sideNav .nav-btn').forEach(a => a.classList.toggle('on', a.getAttribute('href') === '#/' + S.route.split('/').slice(0, 2).join('/'))); }
   function setSide(open) {
     $('#app').classList.toggle('side-open', open); store.set('im_side', open ? '1' : '0');
-    $('#sideToggle').title = open ? 'Collapse menu' : 'Expand menu';
-    $('#sideToggle .nav-label').textContent = open ? 'Collapse menu' : 'Expand menu';
+    $('#menuToggle').title = open ? 'Collapse menu' : 'Expand menu';
   }
   setSide(store.get('im_side') === '1');
-  $('#sideToggle').addEventListener('click', () => setSide(!$('#app').classList.contains('side-open')));
-  $('#mobileMenu').addEventListener('click', () => { $('#app').classList.add('mobile-open'); $('#scrim').hidden = false; });
+  $('#menuToggle').addEventListener('click', () => {
+    if (window.matchMedia('(max-width: 760px)').matches) { $('#app').classList.add('mobile-open'); $('#scrim').hidden = false; }
+    else setSide(!$('#app').classList.contains('side-open'));
+  });
   $('#scrim').addEventListener('click', closeMobile);
   function closeMobile() { $('#app').classList.remove('mobile-open'); $('#scrim').hidden = true; }
   $('#refreshBtn').addEventListener('click', async () => {
