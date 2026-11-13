@@ -169,16 +169,15 @@
 
   // ------------------------------------------------------------ navigation
   const SOON = {
-    fg: { label: 'FG Entry', icon: 'filePlus', phase: 'Phase 2', text: 'Create Finished Goods designs: season, supplier and category pick, auto design number, colours, fits, size range, MRP to WSP with rounding, item description and the duplicate check.' },
     fabric: { label: 'Fabric Entry', icon: 'scroll', phase: 'Phase 3', text: 'Create fabric designs with colours, metres and width, and a "Create FG" button on each approved line.' },
-    requests: { label: 'My Requests', icon: 'inbox', phase: 'Phase 2', text: 'See your pending, approved and rejected requests, and edit pending or rejected ones.' },
     approvals: { label: 'Approvals', icon: 'checkSquare', phase: 'Phase 4', text: 'Download pending requests to Excel, mark Yes / No, and upload them back. Approved requests are expanded into item lines.' },
     erp: { label: 'ERP Export & Codes', icon: 'barcode', phase: 'Phase 5', text: 'Export approved items in the ERP bulk upload format and upload the ERP item codes back. Waiting for the ERP template from the client.' },
     search: { label: 'Item Search', icon: 'search', phase: 'Phase 6', text: 'Search active and archived items, and download a season.' },
   };
   function navModel() {
     const m = [{ items: [{ href: '#/home', label: 'Home', icon: 'home' }] },
-      { group: 'Item entry', items: ['fg', 'fabric', 'requests', 'approvals'].map(k => ({ href: '#/soon/' + k, label: SOON[k].label, icon: SOON[k].icon, soon: true })) },
+      { group: 'Item entry', items: [{ href: '#/fg', label: 'FG Entry', icon: 'filePlus' }, { href: '#/requests', label: 'My Requests', icon: 'inbox' }]
+        .concat(['fabric', 'approvals'].map(k => ({ href: '#/soon/' + k, label: SOON[k].label, icon: SOON[k].icon, soon: true }))) },
       { group: 'ERP', items: ['erp', 'search'].map(k => ({ href: '#/soon/' + k, label: SOON[k].label, icon: SOON[k].icon, soon: true })) }];
     if (isAdmin()) ['Masters', 'Settings', 'Admin'].forEach(g => m.push({ group: g, items: S.order.filter(t => S.schema[t].group === g).map(t => ({ href: '#/m/' + t, label: S.schema[t].title, icon: S.schema[t].icon })) }));
     return m;
@@ -189,7 +188,10 @@
       '<a class="nav-btn' + (i.soon ? ' soon' : '') + '" href="' + i.href + '" title="' + esc(i.label) + '">' + icon(i.icon) + '<span class="nav-label">' + esc(i.label) + '</span>' + (i.soon ? '<span class="nav-soon">Soon</span>' : '') + '</a>').join('')).join('');
     nav.querySelectorAll('a').forEach(a => a.style.textDecoration = 'none');
   }
-  function markNav() { document.querySelectorAll('#sideNav .nav-btn').forEach(a => a.classList.toggle('on', a.getAttribute('href') === '#/' + S.route.split('/').slice(0, 2).join('/'))); }
+  function markNav() {
+    const p = S.route.split('/'), key = '#/' + (p[0] === 'm' || p[0] === 'soon' ? p.slice(0, 2).join('/') : p[0]);
+    document.querySelectorAll('#sideNav .nav-btn').forEach(a => a.classList.toggle('on', a.getAttribute('href') === key));
+  }
   function setSide(open) {
     $('#app').classList.toggle('side-open', open); store.set('im_side', open ? '1' : '0');
     $('#menuToggle').title = open ? 'Collapse menu' : 'Expand menu';
@@ -220,6 +222,7 @@
     const [a, b] = h.split('/');
     if (a === 'm' && S.schema[b] && isAdmin()) renderList(b);
     else if (a === 'soon' && SOON[b]) renderSoon(b);
+    else if (IM.pages[a]) { setTitle(''); IM.pages[a](b); }
     else { S.route = 'home'; renderHome(); }
     markNav();
     $('#content').scrollTop = 0; window.scrollTo(0, 0);
@@ -269,10 +272,10 @@
         '<a class="step' + (s[1] ? ' done' : '') + '" href="' + s[3] + '" style="color:inherit;text-decoration:none"><span class="step-dot">' + icon(s[1] ? 'check' : 'chevronRight') + '</span><div><strong>' + esc(s[0]) + '</strong><small>' + esc(s[2]) + '</small></div></a>').join('') + '</div></div>';
     }
     const road = '<div class="card card-pad"><h3 class="section-title">What is coming</h3><ul class="roadmap">' +
-      ['Phase 1 - Login, masters, settings and users (this version)', 'Phase 2 - FG entry and My Requests', 'Phase 3 - Fabric entry and "Create FG"', 'Phase 4 - Excel approval and notifications', 'Phase 5 - ERP export and ERP code mapping', 'Phase 6 - Nightly archive and item search']
+      ['Phase 2 - FG entry and My Requests (this version)', 'Phase 1 - Login, masters, settings and users (done)', 'Phase 3 - Fabric entry and "Create FG"', 'Phase 4 - Excel approval and notifications', 'Phase 5 - ERP export and ERP code mapping', 'Phase 6 - Nightly archive and item search']
         .map((t, i) => '<li>' + (i === 0 ? '<strong>' + esc(t) + '</strong>' : esc(t)) + '</li>').join('') + '</ul></div>';
     $('#content').innerHTML =
-      '<div class="card hero"><div><h2>' + greet + ', ' + esc((u.FullName || u.Username).split(' ')[0]) + '</h2><p>' + (isAdmin() ? 'Set up the masters below, then merchandisers can start creating items.' : 'Your item entry screens are being built. Your categories:') + '</p><div class="chips">' + cats + '</div></div></div>' +
+      '<div class="card hero"><div><h2>' + greet + ', ' + esc((u.FullName || u.Username).split(' ')[0]) + '</h2><p>' + (isAdmin() ? 'Set up the masters below, then merchandisers can start creating items.' : 'Create a new design or check your requests. Your categories:') + '</p><div class="chips">' + cats + '</div><div class="hero-actions"><a class="btn" href="#/fg">' + icon('filePlus') + 'New FG design</a><a class="btn btn-glass" href="#/requests">' + icon('inbox') + 'My requests</a></div></div></div>' +
       '<div class="tiles">' + tiles + '</div>' +
       '<div class="grid-2">' + (side || road) + (side ? road : '') + '</div>';
     $('#content').querySelectorAll('[data-go]').forEach(b => b.addEventListener('click', () => { if (b.dataset.go) location.hash = b.dataset.go; }));
@@ -494,6 +497,20 @@
     if (!$('#dialogWrap').hidden) { $('#dialogWrap').hidden = true; return; }
     if (!$('#drawerWrap').hidden) closeDrawer();
   });
+
+  // A side panel for read-only details (used by the request screens).
+  function showDrawer(o) {
+    $('#drawerKicker').textContent = o.kicker || ''; $('#drawerTitle').textContent = o.title || '';
+    const form = $('#drawerForm'); form.innerHTML = o.body || ''; form.onsubmit = e => e.preventDefault();
+    const foot = $('#drawerFoot'); foot.innerHTML = '<span class="grow"></span>' + (o.foot || '') + '<button class="btn" type="button" data-close>Close</button>';
+    const wrap = $('#drawerWrap'); wrap.hidden = false; hydrate(wrap);
+    closeDrawer = () => { wrap.hidden = true; form.innerHTML = ''; };
+    wrap.querySelectorAll('[data-close]').forEach(b => b.onclick = closeDrawer);
+    return { close: closeDrawer, form, foot };
+  }
+
+  // Shared helpers for the other screen files (entry.js).
+  const IM = window.IM = { pages: {}, api, S, $, esc, icon, hydrate, toast, dialog, labelOf, chipsHtml, splitIds, setTitle, store, isAdmin, pager, showDrawer, closeDrawer: () => closeDrawer() };
 
   // ------------------------------------------------------------ boot
   hydrate();
