@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Item Master | Otto</title>
+  <link rel="icon" href="img/otto-logo.png">
+  <link rel="stylesheet" href="app.css">
+</head>
+<body>
+
+  <!-- ============ Login ============ -->
+  <section id="auth" class="auth" hidden>
+    <div class="auth-brand">
+      <div class="auth-brand-inner">
+        <div class="auth-logo-tile"><img src="img/otto-logo.png" alt="Otto"></div>
+        <h1>Item Master</h1>
+        <p>Create Finished Goods and Fabric items in a few clicks, get them approved, and hand them to the ERP in its own upload format.</p>
+        <ul class="auth-points">
+          <li><span data-icon="check"></span>Design numbers built for you</li>
+          <li><span data-icon="check"></span>MRP, WSP and descriptions calculated</li>
+          <li><span data-icon="check"></span>Duplicate check before every save</li>
+        </ul>
+      </div>
+    </div>
+    <div class="auth-panel">
+      <form id="loginForm" class="auth-card" autocomplete="on" novalidate>
+        <img class="auth-card-logo" src="img/otto-logo.png" alt="Otto">
+        <h2>Sign in</h2>
+        <p class="muted">Use the username and password given by your admin.</p>
+        <label class="field"><span>Username</span>
+          <div class="input-icon"><span data-icon="user"></span><input name="username" autocomplete="username" required autofocus></div>
+        </label>
+        <label class="field"><span>Password</span>
+          <div class="input-icon"><span data-icon="lock"></span><input name="password" type="password" autocomplete="current-password" required>
+            <button type="button" class="eye" data-eye title="Show password"><span data-icon="eye"></span></button></div>
+        </label>
+        <div class="form-error" id="loginError" hidden></div>
+        <button class="btn btn-primary btn-block" type="submit"><span data-icon="login"></span>Sign in</button>
+        <div class="powered"><span>Powered by</span><img src="img/cb-logo.jpg" alt="C&amp;B Consulting &amp; Beyond"></div>
+      </form>
+
+      <form id="pwForm" class="auth-card" hidden novalidate>
+        <img class="auth-card-logo" src="img/otto-logo.png" alt="Otto">
+        <h2>Set a new password</h2>
+        <p class="muted" id="pwIntro">Please choose your own password before you continue.</p>
+        <label class="field"><span>Current (temporary) password</span>
+          <div class="input-icon"><span data-icon="lock"></span><input name="oldPassword" type="password" autocomplete="current-password" required></div></label>
+        <label class="field"><span>New password (at least 8 characters)</span>
+          <div class="input-icon"><span data-icon="key"></span><input name="newPassword" type="password" autocomplete="new-password" required></div></label>
+        <label class="field"><span>Type the new password again</span>
+          <div class="input-icon"><span data-icon="key"></span><input name="confirm" type="password" autocomplete="new-password" required></div></label>
+        <div class="form-error" id="pwError" hidden></div>
+        <button class="btn btn-primary btn-block" type="submit"><span data-icon="check"></span>Save password</button>
+        <button class="btn btn-ghost btn-block" type="button" data-logout>Log out</button>
+        <div class="powered"><span>Powered by</span><img src="img/cb-logo.jpg" alt="C&amp;B Consulting &amp; Beyond"></div>
+      </form>
+    </div>
+  </section>
+
+  <!-- ============ App ============ -->
+  <div id="app" class="app" hidden>
+    <aside class="sidebar" id="sidebar">
+      <div class="side-head">
+        <div class="side-logo"><img src="img/otto-logo.png" alt="Otto"></div>
+        <div class="side-title"><strong>Item Master</strong><small>Otto</small></div>
+      </div>
+      <nav class="side-nav" id="sideNav"></nav>
+      <div class="side-foot">
+        <button class="nav-btn" id="sideToggle" title="Expand menu"><span data-icon="panel"></span><span class="nav-label">Collapse menu</span></button>
+        <div class="side-powered"><span>Powered by</span><img src="img/cb-logo.jpg" alt="C&amp;B Consulting &amp; Beyond"></div>
+      </div>
+    </aside>
+
+    <div class="main">
+      <header class="topbar">
+        <button class="icon-btn mobile-only" id="mobileMenu" title="Menu"><span data-icon="menu"></span></button>
+        <div class="top-title"><span class="crumb" id="crumb"></span><h1 id="pageTitle">Home</h1></div>
+        <div class="top-actions">
+          <button class="icon-btn" id="refreshBtn" title="Reload from the Google Sheet"><span data-icon="refresh"></span></button>
+          <div class="user-menu">
+            <button class="user-btn" id="userBtn"><span class="avatar" id="avatar"></span><span class="user-name" id="userName"></span><span data-icon="chevronDown"></span></button>
+            <div class="menu" id="userMenu" hidden>
+              <div class="menu-head"><strong id="menuName"></strong><small id="menuRole"></small></div>
+              <button data-action="changePw"><span data-icon="key"></span>Change password</button>
+              <button data-logout><span data-icon="logout"></span>Log out</button>
+            </div>
+          </div>
+        </div>
+      </header>
+      <div class="banner" id="banner" hidden></div>
+      <main class="content" id="content"></main>
+    </div>
+    <div class="scrim" id="scrim" hidden></div>
+  </div>
+
+  <!-- Drawer (add / edit) and dialog -->
+  <div class="drawer-wrap" id="drawerWrap" hidden>
+    <div class="drawer-scrim" data-close></div>
+    <aside class="drawer" role="dialog" aria-modal="true" aria-labelledby="drawerTitle">
+      <header class="drawer-head"><div><small id="drawerKicker"></small><h2 id="drawerTitle"></h2></div><button class="icon-btn" data-close title="Close"><span data-icon="x"></span></button></header>
+      <form id="drawerForm" class="drawer-body" novalidate></form>
+      <footer class="drawer-foot" id="drawerFoot"></footer>
+    </aside>
+  </div>
+  <div class="dialog-wrap" id="dialogWrap" hidden><div class="dialog" id="dialog" role="alertdialog" aria-modal="true"></div></div>
+  <div class="toasts" id="toasts"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
