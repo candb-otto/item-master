@@ -170,8 +170,8 @@
         '<div class="chips-pick" id="fabColList">' + fabCols.map(x => taken[x.c]
           ? '<span class="opt opt-off" title="Already in ' + esc(taken[x.c]) + '">' + esc(name.col(x.c)) + ' <small>FG ' + esc(taken[x.c]) + '</small></span>'
           : '<button type="button" class="opt' + (chosen.includes(x.c) ? ' on' : '') + '" data-fcol="' + esc(x.c) + '">' + (chosen.includes(x.c) ? icon('check') : '') + esc(name.col(x.c)) + '</button>').join('') + '</div>' +
-        (F.Colours.length ? '<table class="grid mini"><thead><tr><th>#</th><th>Colour</th><th>Supplier colour no. (from fabric)</th></tr></thead><tbody>' +
-          F.Colours.map((x, i) => '<tr><td class="id-cell">' + (i + 1) + '</td><td><strong>' + esc(name.col(x.c)) + '</strong></td><td>' + esc(x.n || '-') + '</td></tr>').join('') + '</tbody></table>' : '');
+        (F.Colours.length ? '<div class="table-wrap"><table class="grid mini"><thead><tr><th>#</th><th>Colour</th><th>Supplier colour no. (from fabric)</th></tr></thead><tbody>' +
+          F.Colours.map((x, i) => '<tr><td class="id-cell">' + (i + 1) + '</td><td><strong>' + esc(name.col(x.c)) + '</strong></td><td>' + esc(x.n || '-') + '</td></tr>').join('') + '</tbody></table></div>' : '');
     } else {
       colourSection = F.CategoryID ? '<div class="pick"><div class="pick-head"><input id="colSearch" placeholder="Search colours"><span class="pick-count">' + F.Colours.length + ' selected</span></div><div class="pick-list" id="colList"></div></div><div id="colTable"></div>'
         : '<p class="muted">Choose a category first.</p>';

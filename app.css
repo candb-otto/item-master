@@ -321,7 +321,7 @@ td small.muted { font-size: 11px; }
 .detail-top { display: flex; gap: 10px; align-items: center; }
 .mini-title { margin: 0 0 8px; font-size: 13px; color: var(--ash-700); }
 #drawerForm table.grid { background: #fff; border-radius: 8px; overflow: hidden; }
-@media (max-width: 1100px) { .entry { grid-template-columns: 1fr; } .entry-side { position: static; } }
+@media (max-width: 1100px) { .entry { grid-template-columns: minmax(0, 1fr); } .entry-side { position: static; } }
 .grid .id-cell, .grid .code-cell { white-space: nowrap; }
 
 /* ---------- Phase 3: fabric ---------- */
@@ -381,3 +381,21 @@ label.btn { cursor: pointer; }
 .opt-off { cursor: default; opacity: .6; border-style: dashed; }
 .opt-off:hover { border-color: var(--ash-300); }
 .opt-off small { font-size: 10px; color: var(--ash-500); }
+/* wide tables inside forms scroll on their own instead of stretching the page */
+#colTable, #priceBox, #drawerForm .grid.mini { overflow-x: auto; }
+#drawerForm .grid.mini { display: block; }
+@media (max-width: 760px) {
+  .entry-main .card-pad { padding: 16px; }
+  .input-sm { max-width: 120px; }
+  .apply-all .input-sm { width: 100px; }
+  .kv { grid-template-columns: 110px 1fr; }
+  .toolbar .seg { max-width: 100%; overflow-x: auto; flex-wrap: nowrap; }
+  .toolbar select { max-width: 100%; flex: 1 1 140px; }
+  .bell-counts { grid-template-columns: 1fr; }
+  .ap-sum { flex-wrap: wrap; }
+  .sum-count { flex-wrap: wrap; justify-content: center; }
+}
+@media (max-width: 760px) {
+  .bell-panel { position: fixed; left: 12px; right: 12px; top: 64px; width: auto; }
+  .user-menu .menu { position: fixed; right: 12px; top: 64px; }
+}
