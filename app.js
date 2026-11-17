@@ -169,15 +169,14 @@
 
   // ------------------------------------------------------------ navigation
   const SOON = {
-    fabric: { label: 'Fabric Entry', icon: 'scroll', phase: 'Phase 3', text: 'Create fabric designs with colours, metres and width, and a "Create FG" button on each approved line.' },
     approvals: { label: 'Approvals', icon: 'checkSquare', phase: 'Phase 4', text: 'Download pending requests to Excel, mark Yes / No, and upload them back. Approved requests are expanded into item lines.' },
     erp: { label: 'ERP Export & Codes', icon: 'barcode', phase: 'Phase 5', text: 'Export approved items in the ERP bulk upload format and upload the ERP item codes back. Waiting for the ERP template from the client.' },
     search: { label: 'Item Search', icon: 'search', phase: 'Phase 6', text: 'Search active and archived items, and download a season.' },
   };
   function navModel() {
     const m = [{ items: [{ href: '#/home', label: 'Home', icon: 'home' }] },
-      { group: 'Item entry', items: [{ href: '#/fg', label: 'FG Entry', icon: 'filePlus' }, { href: '#/requests', label: 'My Requests', icon: 'inbox' }]
-        .concat(['fabric', 'approvals'].map(k => ({ href: '#/soon/' + k, label: SOON[k].label, icon: SOON[k].icon, soon: true }))) },
+      { group: 'Item entry', items: [{ href: '#/fg', label: 'FG Entry', icon: 'filePlus' }, { href: '#/fabric', label: 'Fabric Entry', icon: 'scroll' }, { href: '#/requests', label: 'My Requests', icon: 'inbox' }]
+        .concat(['approvals'].map(k => ({ href: '#/soon/' + k, label: SOON[k].label, icon: SOON[k].icon, soon: true }))) },
       { group: 'ERP', items: ['erp', 'search'].map(k => ({ href: '#/soon/' + k, label: SOON[k].label, icon: SOON[k].icon, soon: true })) }];
     if (isAdmin()) ['Masters', 'Settings', 'Admin'].forEach(g => m.push({ group: g, items: S.order.filter(t => S.schema[t].group === g).map(t => ({ href: '#/m/' + t, label: S.schema[t].title, icon: S.schema[t].icon })) }));
     return m;
@@ -222,7 +221,7 @@
     const [a, b] = h.split('/');
     if (a === 'm' && S.schema[b] && isAdmin()) renderList(b);
     else if (a === 'soon' && SOON[b]) renderSoon(b);
-    else if (IM.pages[a]) { setTitle(''); IM.pages[a](b); }
+    else if (IM.pages[a]) { setTitle(''); IM.pages[a].apply(null, h.split('/').slice(1)); }
     else { S.route = 'home'; renderHome(); }
     markNav();
     $('#content').scrollTop = 0; window.scrollTo(0, 0);
@@ -272,10 +271,10 @@
         '<a class="step' + (s[1] ? ' done' : '') + '" href="' + s[3] + '" style="color:inherit;text-decoration:none"><span class="step-dot">' + icon(s[1] ? 'check' : 'chevronRight') + '</span><div><strong>' + esc(s[0]) + '</strong><small>' + esc(s[2]) + '</small></div></a>').join('') + '</div></div>';
     }
     const road = '<div class="card card-pad"><h3 class="section-title">What is coming</h3><ul class="roadmap">' +
-      ['Phase 2 - FG entry and My Requests (this version)', 'Phase 1 - Login, masters, settings and users (done)', 'Phase 3 - Fabric entry and "Create FG"', 'Phase 4 - Excel approval and notifications', 'Phase 5 - ERP export and ERP code mapping', 'Phase 6 - Nightly archive and item search']
+      ['Phase 3 - Fabric entry and "Create FG" (this version)', 'Phase 1 - Login, masters, settings and users (done)', 'Phase 2 - FG entry and My Requests (done)', 'Phase 4 - Excel approval and notifications', 'Phase 5 - ERP export and ERP code mapping', 'Phase 6 - Nightly archive and item search']
         .map((t, i) => '<li>' + (i === 0 ? '<strong>' + esc(t) + '</strong>' : esc(t)) + '</li>').join('') + '</ul></div>';
     $('#content').innerHTML =
-      '<div class="card hero"><div><h2>' + greet + ', ' + esc((u.FullName || u.Username).split(' ')[0]) + '</h2><p>' + (isAdmin() ? 'Set up the masters below, then merchandisers can start creating items.' : 'Create a new design or check your requests. Your categories:') + '</p><div class="chips">' + cats + '</div><div class="hero-actions"><a class="btn" href="#/fg">' + icon('filePlus') + 'New FG design</a><a class="btn btn-glass" href="#/requests">' + icon('inbox') + 'My requests</a></div></div></div>' +
+      '<div class="card hero"><div><h2>' + greet + ', ' + esc((u.FullName || u.Username).split(' ')[0]) + '</h2><p>' + (isAdmin() ? 'Set up the masters below, then merchandisers can start creating items.' : 'Create a new design or check your requests. Your categories:') + '</p><div class="chips">' + cats + '</div><div class="hero-actions"><a class="btn" href="#/fg">' + icon('filePlus') + 'New FG design</a><a class="btn" href="#/fabric">' + icon('scroll') + 'New fabric design</a><a class="btn btn-glass" href="#/requests">' + icon('inbox') + 'My requests</a></div></div></div>' +
       '<div class="tiles">' + tiles + '</div>' +
       '<div class="grid-2">' + (side || road) + (side ? road : '') + '</div>';
     $('#content').querySelectorAll('[data-go]').forEach(b => b.addEventListener('click', () => { if (b.dataset.go) location.hash = b.dataset.go; }));

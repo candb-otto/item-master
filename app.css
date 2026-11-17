@@ -323,3 +323,11 @@ td small.muted { font-size: 11px; }
 #drawerForm table.grid { background: #fff; border-radius: 8px; overflow: hidden; }
 @media (max-width: 1100px) { .entry { grid-template-columns: 1fr; } .entry-side { position: static; } }
 .grid .id-cell, .grid .code-cell { white-space: nowrap; }
+
+/* ---------- Phase 3: fabric ---------- */
+.seg-kind button { display: inline-flex; align-items: center; gap: 6px; }
+.seg-kind .ico { width: 16px; height: 16px; }
+.from-fab { display: block; font-size: 10px; font-weight: 600; letter-spacing: 0; color: var(--amber); text-transform: uppercase; }
+.grid tfoot td { padding: 8px 10px; border-top: 1px solid var(--ash-200); background: var(--ash-50); }
+.note .link { font-size: inherit; }
+.note span { line-height: 1.5; }
