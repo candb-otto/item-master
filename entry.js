@@ -206,9 +206,9 @@
     on('fSupplier', 'change', e => { F.SupplierID = e.target.value; drawSummary(); schedulePreview(); });
     on('fDesignNo', 'input', e => { F.DesignNo = e.target.value.toUpperCase(); drawSummary(); schedulePreview(); });
     on('fSupCode', 'input', e => { F.SupplierItemCode = e.target.value; drawSummary(); schedulePreview(); });
-    on('fWidth', 'input', e => { F.Width = e.target.value; drawSummary(); });
+    on('fWidth', 'input', e => { F.Width = e.target.value; drawSummary(); schedulePreview(); });
     on('fMrp', 'input', e => { F.BaseMRP = e.target.value; drawPrices(); drawSummary(); schedulePreview(); });
-    on('fMargin', 'input', e => { F.MarginPct = e.target.value; drawPrices(); drawSummary(); });
+    on('fMargin', 'input', e => { F.MarginPct = e.target.value; drawPrices(); drawSummary(); schedulePreview(); });
     on('colSearch', 'input', () => drawColours(true));
     document.querySelectorAll('[data-fit]').forEach(b => b.onclick = () => { toggle(F.Fits, b.dataset.fit); redrawPick(b, F.Fits.includes(b.dataset.fit)); drawPrices(); drawSummary(); schedulePreview(); });
     document.querySelectorAll('[data-size]').forEach(b => b.onclick = () => {
@@ -246,8 +246,8 @@
         '<td class="num"><button type="button" class="icon-btn" data-crm="' + i + '" title="Remove">' + icon('x') + '</button></td></tr>').join('') +
       '</tbody>' + (fab ? '<tfoot><tr><td></td><td colspan="2"><strong>Total</strong></td><td><strong id="mTotal">' + metres(totalM()) + '</strong></td><td></td></tr></tfoot>' : '') + '</table>'
       : '<p class="muted" style="margin:10px 0 0">Click colours above to add them.</p>';
-    $('#colTable').querySelectorAll('[data-cno]').forEach(inp => inp.oninput = () => { F.Colours[Number(inp.dataset.cno)].n = inp.value.trim(); drawSummary(); });
-    $('#colTable').querySelectorAll('[data-cm]').forEach(inp => inp.oninput = () => { F.Colours[Number(inp.dataset.cm)].m = inp.value; const t = $('#mTotal'); if (t) t.textContent = metres(totalM()); drawSummary(); });
+    $('#colTable').querySelectorAll('[data-cno]').forEach(inp => inp.oninput = () => { F.Colours[Number(inp.dataset.cno)].n = inp.value.trim(); drawSummary(); schedulePreview(); });
+    $('#colTable').querySelectorAll('[data-cm]').forEach(inp => inp.oninput = () => { F.Colours[Number(inp.dataset.cm)].m = inp.value; const t = $('#mTotal'); if (t) t.textContent = metres(totalM()); drawSummary(); schedulePreview(); });
     $('#colTable').querySelectorAll('[data-crm]').forEach(b => b.onclick = () => { F.Colours.splice(Number(b.dataset.crm), 1); drawColours(); drawSummary(); schedulePreview(); });
   }
   const totalM = () => Math.round(F.Colours.reduce((s, x) => s + (Number(x.m) || 0), 0) * 100) / 100;
@@ -265,7 +265,8 @@
       '<small class="muted">Margin used: ' + m + '%' + (F.MarginPct === '' ? ' (category standard)' : '') + '. WSP = MRP ÷ (1 + margin %), rounded with the WSP rounding table.</small>';
   }
 
-  let lastPreview = { designNo: '', errors: [] };
+  let lastPreview = { designNo: '', errors: [] }, formV = 0;
+  const DUP = /Already exists|already used|already exists/;
   function drawSummary() {
     const box = $('#summary'); if (!box) return;
     const fab = isFab();
@@ -273,7 +274,8 @@
     const dn = F.locked ? F.DesignNo : (F.ItemType === 'Core' ? (F.DesignNo || '') : (lastPreview.designNo || ''));
     const desc = fab ? '' : describe(F.CategoryID, F.Fits[0], F.Colours[0] && F.Colours[0].c, F.Sizes[0], F.FabricTypeID);
     const local = localErrors();
-    const errs = local.concat((lastPreview.errors || []).filter(e => !local.length || /Already exists|already used|already exists/.test(e)));
+    const fresh = lastPreview.v === formV;
+    const errs = local.concat((lastPreview.errors || []).filter(e => fresh && (!local.length || DUP.test(e))));
     const kicker = F.RequestID ? esc(F.RequestID) + ' · ' + esc(F.Status) : fromFab() ? 'From fabric ' + esc(F.SourceDesign) : 'Design number';
     box.innerHTML =
       '<div class="sum-head"><small>' + kicker + '</small>' +
@@ -321,12 +323,15 @@
       Width: F.Width, SourceDesign: F.SourceDesign, FromColour: F.FromColour };
   }
   // ask the server for the next design number and the duplicate check (it has every request)
+  // Every change bumps formV; server messages are shown only when they answer the form as it is now.
   function schedulePreview(delay) {
     clearTimeout(previewTimer);
+    const v = ++formV;
+    drawSummary();
     previewTimer = setTimeout(async () => {
-      if (!F.CategoryID || !F.SeasonID) { lastPreview = { designNo: '', errors: [] }; drawSummary(); return; }
+      if (!F.CategoryID || !F.SeasonID) { lastPreview = { designNo: '', errors: [], v }; drawSummary(); return; }
       const seq = ++previewSeq;
-      try { const r = await IM.api('/api/request/preview', { row: payload() }); if (seq === previewSeq) { lastPreview = r; drawSummary(); } }
+      try { const r = await IM.api('/api/request/preview', { row: payload() }); if (seq === previewSeq && v === formV) { r.v = v; lastPreview = r; drawSummary(); } }
       catch (e) { /* the summary still shows local checks */ }
     }, delay === undefined ? 450 : delay);
   }
@@ -355,7 +360,7 @@
       else { clearDetails(); lastPreview = { designNo: '', errors: [] }; drawForm(); }
     } catch (e) {
       IM.toast(e.message.split('\n')[0], true);
-      lastPreview = { designNo: lastPreview.designNo, errors: e.message.split('\n') }; drawSummary();
+      lastPreview = { designNo: lastPreview.designNo, errors: e.message.split('\n'), v: formV }; drawSummary();
     }
   }
 
