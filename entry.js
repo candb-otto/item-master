@@ -67,6 +67,10 @@
       F = { RequestID: r.RequestID, Status: r.Status, Remarks: r.Remarks, locked: true, ItemKind: r.ItemKind, ItemType: r.ItemType, SeasonID: r.SeasonID, CategoryID: r.CategoryID, SupplierID: r.SupplierID,
         FabricTypeID: r.FabricTypeID, DesignNo: r.DesignNo, SupplierItemCode: r.SupplierItemCode, Colours: r.Colours || [], Fits: ids(r.Fits), Sizes: ids(r.Sizes),
         BaseMRP: r.BaseMRP, MarginPct: r.MarginPct, Width: r.Width, SourceDesign: r.SourceDesign };
+      if (r.SourceDesign) {   // FG made from fabric: load the fabric's colours so they can be ticked / unticked
+        try { Object.assign(F, fabricColourState((await IM.api('/api/request?id=' + encodeURIComponent(r.SourceDesign))).request, r.RequestID)); }
+        catch (e) { F.FabColours = F.Colours.slice(); F.Taken = {}; }
+      }
     } else {
       let last = {}; try { last = JSON.parse(IM.store.get(lastKey()) || '{}'); } catch (e) { /* ignore */ }
       F = { locked: false, ItemKind: kind, ItemType: 'Non-core', SeasonID: '', CategoryID: '', SupplierID: '', FabricTypeID: '', DesignNo: '', SupplierItemCode: '', Colours: [], Fits: [], Sizes: [], BaseMRP: '', MarginPct: '', Width: '', SourceDesign: '' };
@@ -81,25 +85,32 @@
     drawForm();
   }
 
-  async function openFromFabric(srcId, colourId) {
+  // Colours of a fabric design and, for each colour, the FG request that already took it (not counting `selfId`).
+  function fabricColourState(src, selfId) {
+    const taken = {};
+    (src.FGs || []).forEach(x => { if (x.Status !== 'Rejected' && x.RequestID !== selfId) (x.Colours || []).forEach(c => { taken[c] = x.RequestID; }); });
+    return { FabColours: (src.Colours || []).map(x => ({ c: x.c, n: x.n })), Taken: taken };
+  }
+
+  // One click from an approved fabric design: every colour that has no FG yet is filled in (the user can untick some).
+  async function openFromFabric(srcId) {
     IM.setTitle('New FG from fabric', 'Item entry');
     const content = $('#content');
     content.innerHTML = '<div class="loading">' + icon('loader') + 'Loading ' + esc(srcId) + '...</div>';
     let r;
     try { r = (await IM.api('/api/request?id=' + encodeURIComponent(srcId))).request; }
     catch (e) { content.innerHTML = emptyCard('alert', e.message); return; }
-    const col = (r.Colours || []).find(x => x.c === colourId);
     const back = '<p><a class="btn" href="#/requests">' + icon('inbox') + 'My requests</a></p>';
     if (r.ItemKind !== 'Fabric') { content.innerHTML = emptyCard('alert', srcId + ' is not a fabric design.', back); return; }
     if (r.Status !== 'Approved') { content.innerHTML = emptyCard('lock', 'FG can be made only from an approved fabric design. ' + srcId + ' is ' + r.Status + '.', back); return; }
-    if (!col) { content.innerHTML = emptyCard('alert', 'This colour is not part of fabric design ' + r.DesignNo + '.', back); return; }
-    const done = (r.FGs || []).find(x => x.Colour === colourId && x.Status !== 'Rejected');
-    if (done) { content.innerHTML = emptyCard('info', 'FG for ' + name.col(colourId) + ' of ' + r.DesignNo + ' already exists (' + done.RequestID + ', ' + done.Status + ').', back); return; }
+    const st = fabricColourState(r, null);
+    const free = st.FabColours.filter(x => !st.Taken[x.c]);
+    if (!free.length) { content.innerHTML = emptyCard('info', 'Every colour of fabric design ' + r.DesignNo + ' already has FG.', back); return; }
     const c = byId('Categories', 'CategoryID', r.CategoryID) || {};
     const fitOk = fitsFor(r.CategoryID).map(x => x.FitID), sizeOk = sizesFor(r.CategoryID).map(x => x.SizeID);
-    F = { locked: true, fresh: true, ItemKind: 'FG', ItemType: r.ItemType, SeasonID: r.SeasonID, CategoryID: r.CategoryID, SupplierID: r.SupplierID, FabricTypeID: r.FabricTypeID,
-      DesignNo: r.DesignNo, SupplierItemCode: r.SupplierItemCode, Colours: [{ c: col.c, n: col.n }], FromColour: col.c,
-      Fits: ids(c.DefaultFits).filter(x => fitOk.includes(x)), Sizes: ids(c.DefaultSizes).filter(x => sizeOk.includes(x)), BaseMRP: '', MarginPct: '', Width: '', SourceDesign: r.RequestID };
+    F = Object.assign({ locked: true, fresh: true, ItemKind: 'FG', ItemType: r.ItemType, SeasonID: r.SeasonID, CategoryID: r.CategoryID, SupplierID: r.SupplierID, FabricTypeID: r.FabricTypeID,
+      DesignNo: r.DesignNo, SupplierItemCode: r.SupplierItemCode, Colours: free.map(x => ({ c: x.c, n: x.n })),
+      Fits: ids(c.DefaultFits).filter(x => fitOk.includes(x)), Sizes: ids(c.DefaultSizes).filter(x => sizeOk.includes(x)), BaseMRP: '', MarginPct: '', Width: '', SourceDesign: r.RequestID }, st);
     lastPreview = { designNo: r.DesignNo, errors: [] };
     drawForm();
   }
@@ -154,8 +165,13 @@
 
     let colourSection;
     if (fromFab()) {
-      const x = F.Colours[0] || {};
-      colourSection = '<div class="form-grid">' + lockedVal('Colour', name.col(x.c)) + lockedVal('Supplier colour no.', x.n) + '</div>';
+      const fabCols = F.FabColours || F.Colours, chosen = F.Colours.map(x => x.c), taken = F.Taken || {};
+      colourSection = '<p class="note" style="margin:0">' + icon('info') + 'All colours of the fabric that have no FG yet are selected. Untick any you do not want in this FG.</p>' +
+        '<div class="chips-pick" id="fabColList">' + fabCols.map(x => taken[x.c]
+          ? '<span class="opt opt-off" title="Already in ' + esc(taken[x.c]) + '">' + esc(name.col(x.c)) + ' <small>FG ' + esc(taken[x.c]) + '</small></span>'
+          : '<button type="button" class="opt' + (chosen.includes(x.c) ? ' on' : '') + '" data-fcol="' + esc(x.c) + '">' + (chosen.includes(x.c) ? icon('check') : '') + esc(name.col(x.c)) + '</button>').join('') + '</div>' +
+        (F.Colours.length ? '<table class="grid mini"><thead><tr><th>#</th><th>Colour</th><th>Supplier colour no. (from fabric)</th></tr></thead><tbody>' +
+          F.Colours.map((x, i) => '<tr><td class="id-cell">' + (i + 1) + '</td><td><strong>' + esc(name.col(x.c)) + '</strong></td><td>' + esc(x.n || '-') + '</td></tr>').join('') + '</tbody></table>' : '');
     } else {
       colourSection = F.CategoryID ? '<div class="pick"><div class="pick-head"><input id="colSearch" placeholder="Search colours"><span class="pick-count">' + F.Colours.length + ' selected</span></div><div class="pick-list" id="colList"></div></div><div id="colTable"></div>'
         : '<p class="muted">Choose a category first.</p>';
@@ -185,7 +201,7 @@
       '<section class="card card-pad"><h3 class="section-title">' + icon(fab ? 'scroll' : 'tag') + (fab ? 'Fabric design' : 'Design') + '</h3>' + head +
       '<div class="form-grid">' + dn +
       '<label class="field"><span>Supplier item code<i class="req">*</i></span><input class="input" id="fSupCode" value="' + esc(F.SupplierItemCode) + '" maxlength="60" placeholder="As on the supplier\'s quote"></label>' + width + '</div></section>' +
-      '<section class="card card-pad"><h3 class="section-title">' + icon('palette') + (fromFab() ? 'Colour (from the fabric)' : 'Colours') + '</h3>' + colourSection + '</section>' +
+      '<section class="card card-pad"><h3 class="section-title">' + icon('palette') + (fromFab() ? 'Colours (from the fabric)' : 'Colours') + '</h3>' + colourSection + '</section>' +
       fgSections +
       '</div>' +
       '<aside class="entry-side"><div class="card summary" id="summary"></div></aside></div>';
@@ -210,6 +226,13 @@
     on('fMrp', 'input', e => { F.BaseMRP = e.target.value; drawPrices(); drawSummary(); schedulePreview(); });
     on('fMargin', 'input', e => { F.MarginPct = e.target.value; drawPrices(); drawSummary(); schedulePreview(); });
     on('colSearch', 'input', () => drawColours(true));
+    document.querySelectorAll('[data-fcol]').forEach(b => b.onclick = () => {   // FG from fabric: tick / untick a fabric colour, kept in fabric order
+      const id = b.dataset.fcol, i = F.Colours.findIndex(x => x.c === id);
+      if (i >= 0) F.Colours.splice(i, 1);
+      else { const fc = (F.FabColours || []).find(x => x.c === id); if (fc) F.Colours.push({ c: fc.c, n: fc.n }); }
+      const order = (F.FabColours || []).map(x => x.c); F.Colours.sort((a, z) => order.indexOf(a.c) - order.indexOf(z.c));
+      drawForm();
+    });
     document.querySelectorAll('[data-fit]').forEach(b => b.onclick = () => { toggle(F.Fits, b.dataset.fit); redrawPick(b, F.Fits.includes(b.dataset.fit)); drawPrices(); drawSummary(); schedulePreview(); });
     document.querySelectorAll('[data-size]').forEach(b => b.onclick = () => {
       toggle(F.Sizes, b.dataset.size);
@@ -333,7 +356,7 @@
   function payload() {
     return { RequestID: F.RequestID, ItemKind: F.ItemKind, ItemType: F.ItemType, SeasonID: F.SeasonID, CategoryID: F.CategoryID, SupplierID: F.SupplierID, FabricTypeID: F.FabricTypeID,
       DesignNo: F.DesignNo, SupplierItemCode: F.SupplierItemCode, Colours: F.Colours, Fits: F.Fits.join(', '), Sizes: F.Sizes.join(', '), BaseMRP: F.BaseMRP, MarginPct: F.MarginPct,
-      Width: F.Width, SourceDesign: F.SourceDesign, FromColour: F.FromColour };
+      Width: F.Width, SourceDesign: F.SourceDesign, FromColours: F.SourceDesign ? F.Colours.map(x => x.c) : undefined };
   }
   // ask the server for the next design number and the duplicate check (it has every request)
   // Every change bumps formV; server messages are shown only when they answer the form as it is now.
@@ -437,14 +460,16 @@
 
     if (r.ItemKind === 'Fabric') {
       const approved = r.Status === 'Approved';
-      const fgFor = c => (r.FGs || []).filter(x => x.Colour === c && x.Status !== 'Rejected')[0];
-      d.form.innerHTML = top + '<dl class="kv">' + common + kv('Width', esc(r.Width)) + '</dl>' +
+      const fgFor = c => (r.FGs || []).filter(x => x.Status !== 'Rejected' && (x.Colours || []).includes(c))[0];
+      const free = r.Colours.filter(x => !fgFor(x.c)).length;
+      const action = !approved ? '<p class="note">' + icon('info') + '"Create FG" becomes available once this fabric design is approved.</p>'
+        : free ? '<div class="fab-fg"><a class="btn btn-primary" href="#/fg/from/' + esc(r.RequestID) + '">' + icon('filePlus') + 'Create FG</a><span>' + free + ' of ' + r.Colours.length + ' colour' + (r.Colours.length === 1 ? '' : 's') + ' will be filled in' + (free < r.Colours.length ? ' (the others already have FG)' : '') + '.</span></div>'
+          : '<p class="note">' + icon('check') + 'Every colour of this fabric already has FG.</p>';
+      d.form.innerHTML = top + '<dl class="kv">' + common + kv('Width', esc(r.Width)) + '</dl>' + action +
         '<div><h4 class="mini-title">Colours</h4><table class="grid mini"><thead><tr><th>Colour</th><th>Supplier colour no.</th><th class="num">Metres</th><th>FG</th></tr></thead><tbody>' +
         r.Colours.map(x => { const fg = fgFor(x.c); return '<tr><td><strong>' + esc(name.col(x.c)) + '</strong></td><td>' + esc(x.n || '-') + '</td><td class="num">' + esc(metres(x.m)) + '</td><td>' +
-          (fg ? '<button type="button" class="link" data-open="' + esc(fg.RequestID) + '">' + esc(fg.RequestID) + '</button> ' + statusPill(fg.Status)
-            : approved ? '<a class="btn btn-sm btn-primary" href="#/fg/from/' + esc(r.RequestID) + '/' + esc(x.c) + '">' + icon('filePlus') + 'Create FG</a>' : '<span class="muted">After approval</span>') + '</td></tr>'; }).join('') +
-        '</tbody><tfoot><tr><td colspan="2"><strong>Total</strong></td><td class="num"><strong>' + esc(metres(r.TotalMetres)) + '</strong></td><td></td></tr></tfoot></table>' +
-        (approved ? '' : '<p class="note" style="margin-top:8px">' + icon('info') + 'The "Create FG" button appears on each colour once this fabric design is approved.</p>') + '</div>' + audit;
+          (fg ? '<button type="button" class="link" data-open="' + esc(fg.RequestID) + '">' + esc(fg.RequestID) + '</button> ' + statusPill(fg.Status) : '<span class="muted">-</span>') + '</td></tr>'; }).join('') +
+        '</tbody><tfoot><tr><td colspan="2"><strong>Total</strong></td><td class="num"><strong>' + esc(metres(r.TotalMetres)) + '</strong></td><td></td></tr></tfoot></table></div>' + audit;
       d.form.querySelectorAll('a[href^="#/fg/from/"]').forEach(a => a.onclick = () => d.close());
       d.form.querySelectorAll('[data-open]').forEach(b => b.onclick = () => openRequest(b.dataset.open));
     } else {

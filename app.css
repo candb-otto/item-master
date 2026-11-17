@@ -376,3 +376,8 @@ label.btn { cursor: pointer; }
 .bell-dot.t-approved { background: var(--green-50); color: var(--green); }
 .bell-dot.t-rejected { background: var(--red-50); color: #9b1c22; }
 .bell-dot.t-submitted, .bell-dot.t-resubmitted { background: var(--amber-50); color: var(--amber); }
+.fab-fg { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; padding: 12px; border-radius: var(--radius-sm); background: var(--navy-50); border: 1px solid var(--navy-100); }
+.fab-fg span { font-size: 13px; color: var(--ash-700); }
+.opt-off { cursor: default; opacity: .6; border-style: dashed; }
+.opt-off:hover { border-color: var(--ash-300); }
+.opt-off small { font-size: 10px; color: var(--ash-500); }
