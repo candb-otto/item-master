@@ -515,6 +515,16 @@
   // Shared helpers for the other screen files (entry.js).
   const IM = window.IM = { pages: {}, api, S, $, esc, icon, hydrate, toast, dialog, labelOf, chipsHtml, splitIds, setTitle, store, isAdmin, pager, showDrawer, closeDrawer: () => closeDrawer() };
 
+  // Phones show list tables as cards: each cell gets its column name as a label (used by the CSS).
+  function labelCells(root) {
+    root.querySelectorAll('table.grid:not(.mini):not([data-labelled])').forEach(t => {
+      const heads = Array.from(t.querySelectorAll('thead th')).map(th => th.textContent.trim());
+      t.querySelectorAll('tbody tr').forEach(tr => Array.from(tr.children).forEach((td, i) => td.setAttribute('data-label', heads[i] || '')));
+      t.setAttribute('data-labelled', '1');
+    });
+  }
+  new MutationObserver(() => labelCells($('#content'))).observe($('#content'), { childList: true, subtree: true });
+
   // ------------------------------------------------------------ boot
   hydrate();
   (async function boot() {

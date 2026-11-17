@@ -399,3 +399,23 @@ label.btn { cursor: pointer; }
   .bell-panel { position: fixed; left: 12px; right: 12px; top: 64px; width: auto; }
   .user-menu .menu { position: fixed; right: 12px; top: 64px; }
 }
+
+/* ---------- phone: list tables become cards ---------- */
+@media (max-width: 760px) {
+  #content .table-wrap { overflow: visible; }
+  #content table.grid:not(.mini), #content table.grid:not(.mini) tbody { display: block; }
+  #content table.grid:not(.mini) thead { display: none; }
+  #content table.grid:not(.mini) tbody tr { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 14px; padding: 14px 16px; border-bottom: 1px solid var(--ash-200); position: relative; }
+  #content table.grid:not(.mini) tbody tr:active td { background: transparent; }
+  #content table.grid:not(.mini) td { display: block; padding: 0; border: 0; text-align: left; white-space: normal; min-width: 0; overflow-wrap: anywhere; font-size: 13px; }
+  #content table.grid:not(.mini) td::before { content: attr(data-label); display: block; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .5px; color: var(--ash-500); margin-bottom: 2px; }
+  #content table.grid:not(.mini) td[data-label=""]::before { display: none; }
+  #content table.grid:not(.mini) td:first-child { grid-column: 1 / -1; font-size: 16px; padding-right: 24px; }
+  #content table.grid:not(.mini) td:first-child::before { display: none; }
+  #content table.grid:not(.mini) tbody tr::after { content: ""; position: absolute; right: 16px; top: 18px; width: 8px; height: 8px; border-right: 2px solid var(--ash-400); border-bottom: 2px solid var(--ash-400); transform: rotate(-45deg); }
+  #content table.grid:not(.mini) td.id-cell { font-size: 13px; }
+  #content table.grid:not(.mini) td .chips { gap: 4px; }
+  #content table.grid:not(.mini) td .who { display: inline; margin-right: 6px; }
+  .pager { justify-content: center; }
+  .pager .info { width: 100%; text-align: center; margin: 0 0 6px; }
+}
