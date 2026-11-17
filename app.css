@@ -331,3 +331,7 @@ td small.muted { font-size: 11px; }
 .grid tfoot td { padding: 8px 10px; border-top: 1px solid var(--ash-200); background: var(--ash-50); }
 .note .link { font-size: inherit; }
 .note span { line-height: 1.5; }
+.apply-all { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 12px 0 10px; padding: 10px 12px; border-radius: var(--radius-sm); background: var(--navy-50); border: 1px solid var(--navy-100); }
+.apply-all label { font-weight: 600; font-size: 13px; color: var(--navy-700); }
+.apply-all .input-sm { width: 120px; }
+.apply-all small { color: var(--ash-500); font-size: 12px; }

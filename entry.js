@@ -234,18 +234,31 @@
       : '<div class="pick-empty">' + (all.length ? 'No match.' : 'No colour is mapped to this category yet.') + '</div>';
     list.querySelectorAll('[data-col]').forEach(b => b.onclick = () => {
       const id = b.dataset.col, i = F.Colours.findIndex(x => x.c === id);
-      if (i >= 0) F.Colours.splice(i, 1); else F.Colours.push(isFab() ? { c: id, n: '', m: '' } : { c: id, n: '' });
+      if (i >= 0) F.Colours.splice(i, 1); else F.Colours.push(isFab() ? { c: id, n: '', m: F.AllM || '' } : { c: id, n: '' });
       drawColours(); drawSummary(); schedulePreview();
     });
     document.querySelector('.pick-count').textContent = F.Colours.length + ' selected';
     if (listOnly) return;
     const mand = (catRow() || {}).SupplierColourRule === 'Mandatory', fab = isFab();
-    $('#colTable').innerHTML = F.Colours.length ? '<table class="grid mini"><thead><tr><th>#</th><th>Colour</th><th>Supplier colour no.' + (mand ? '<i class="req">*</i>' : ' (optional)') + '</th>' + (fab ? '<th>Quantity (metres)<i class="req">*</i></th>' : '') + '<th></th></tr></thead><tbody>' +
+    const allBox = fab && F.Colours.length ? '<div class="apply-all"><label for="allM">Same metres for all colours</label><input class="input input-sm" id="allM" type="number" min="0" step="any" inputmode="decimal" value="' + esc(F.AllM || '') + '" placeholder="Metres">' +
+      '<button type="button" class="btn btn-sm" id="allMApply">' + icon('check') + 'Apply to all ' + F.Colours.length + '</button><small>You can still change any colour below.</small></div>' : '';
+    $('#colTable').innerHTML = allBox + (F.Colours.length ? '<table class="grid mini"><thead><tr><th>#</th><th>Colour</th><th>Supplier colour no.' + (mand ? '<i class="req">*</i>' : ' (optional)') + '</th>' + (fab ? '<th>Quantity (metres)<i class="req">*</i></th>' : '') + '<th></th></tr></thead><tbody>' +
       F.Colours.map((x, i) => '<tr><td class="id-cell">' + (i + 1) + '</td><td><strong>' + esc(name.col(x.c)) + '</strong></td><td><input class="input input-sm" data-cno="' + i + '" value="' + esc(x.n) + '" maxlength="20" placeholder="e.g. ' + (i + 1) + '"></td>' +
         (fab ? '<td><input class="input input-sm" type="number" min="0" step="any" inputmode="decimal" data-cm="' + i + '" value="' + esc(x.m) + '" placeholder="Metres"></td>' : '') +
         '<td class="num"><button type="button" class="icon-btn" data-crm="' + i + '" title="Remove">' + icon('x') + '</button></td></tr>').join('') +
       '</tbody>' + (fab ? '<tfoot><tr><td></td><td colspan="2"><strong>Total</strong></td><td><strong id="mTotal">' + metres(totalM()) + '</strong></td><td></td></tr></tfoot>' : '') + '</table>'
-      : '<p class="muted" style="margin:10px 0 0">Click colours above to add them.</p>';
+      : '<p class="muted" style="margin:10px 0 0">Click colours above to add them.</p>');
+    const allM = $('#allM');
+    if (allM) {
+      const apply = () => {
+        const v = String(allM.value).trim();
+        if (!(Number(v) > 0)) { IM.toast('Enter the metres (more than 0) first.', true); allM.focus(); return; }
+        F.AllM = v; F.Colours.forEach(x => { x.m = v; }); drawColours(); schedulePreview();
+      };
+      allM.oninput = () => { F.AllM = allM.value; };
+      allM.onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); apply(); } };
+      $('#allMApply').onclick = apply;
+    }
     $('#colTable').querySelectorAll('[data-cno]').forEach(inp => inp.oninput = () => { F.Colours[Number(inp.dataset.cno)].n = inp.value.trim(); drawSummary(); schedulePreview(); });
     $('#colTable').querySelectorAll('[data-cm]').forEach(inp => inp.oninput = () => { F.Colours[Number(inp.dataset.cm)].m = inp.value; const t = $('#mTotal'); if (t) t.textContent = metres(totalM()); drawSummary(); schedulePreview(); });
     $('#colTable').querySelectorAll('[data-crm]').forEach(b => b.onclick = () => { F.Colours.splice(Number(b.dataset.crm), 1); drawColours(); drawSummary(); schedulePreview(); });
@@ -336,7 +349,7 @@
     }, delay === undefined ? 450 : delay);
   }
   function clearDetails() {
-    F.SupplierItemCode = ''; F.DesignNo = ''; F.BaseMRP = ''; F.MarginPct = ''; F.Width = ''; F.Colours = [];
+    F.SupplierItemCode = ''; F.DesignNo = ''; F.BaseMRP = ''; F.MarginPct = ''; F.Width = ''; F.Colours = []; F.AllM = '';
     const c = catRow() || {};
     F.Fits = ids(c.DefaultFits).filter(x => fitsFor(F.CategoryID).some(f => f.FitID === x));
     F.Sizes = ids(c.DefaultSizes).filter(x => sizesFor(F.CategoryID).some(s => s.SizeID === x));
