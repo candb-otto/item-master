@@ -48,6 +48,10 @@
     edit: '<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="m13.5 6.5 4 4"/>',
     loader: '<path d="M12 3a9 9 0 1 0 9 9"/>',
     sheet: '<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M4 9h16M4 15h16M10 9v12"/>',
+    bell: '<path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20a2 2 0 0 0 4 0"/>',
+    download: '<path d="M12 4v11M7 10l5 5 5-5"/><path d="M4 18v2h16v-2"/>',
+    upload: '<path d="M12 15V4M7 9l5-5 5 5"/><path d="M4 18v2h16v-2"/>',
+    xCircle: '<circle cx="12" cy="12" r="9"/><path d="m9 9 6 6M15 9l-6 6"/>',
   };
   const icon = (n, cls) => '<svg class="ico' + (cls ? ' ' + cls : '') + '" viewBox="0 0 24 24" aria-hidden="true">' + (P[n] || P.info) + '</svg>';
   function hydrate(root) { (root || document).querySelectorAll('[data-icon]').forEach(el => { if (!el.firstElementChild) el.innerHTML = icon(el.dataset.icon); }); }
@@ -157,6 +161,7 @@
     $('#avatar').textContent = initials; $('#userName').textContent = u.FullName || u.Username;
     $('#menuName').textContent = u.FullName || u.Username; $('#menuRole').textContent = u.Role + ' · ' + u.Username;
     buildNav(); route();
+    if (IM.afterStart) IM.afterStart();
   }
   async function loadData(fresh) {
     const r = await api('/api/data' + (fresh ? '?fresh=1' : ''));
@@ -169,14 +174,13 @@
 
   // ------------------------------------------------------------ navigation
   const SOON = {
-    approvals: { label: 'Approvals', icon: 'checkSquare', phase: 'Phase 4', text: 'Download pending requests to Excel, mark Yes / No, and upload them back. Approved requests are expanded into item lines.' },
     erp: { label: 'ERP Export & Codes', icon: 'barcode', phase: 'Phase 5', text: 'Export approved items in the ERP bulk upload format and upload the ERP item codes back. Waiting for the ERP template from the client.' },
     search: { label: 'Item Search', icon: 'search', phase: 'Phase 6', text: 'Search active and archived items, and download a season.' },
   };
   function navModel() {
     const m = [{ items: [{ href: '#/home', label: 'Home', icon: 'home' }] },
       { group: 'Item entry', items: [{ href: '#/fg', label: 'FG Entry', icon: 'filePlus' }, { href: '#/fabric', label: 'Fabric Entry', icon: 'scroll' }, { href: '#/requests', label: 'My Requests', icon: 'inbox' }]
-        .concat(['approvals'].map(k => ({ href: '#/soon/' + k, label: SOON[k].label, icon: SOON[k].icon, soon: true }))) },
+        .concat([{ href: '#/approvals', label: 'Approvals', icon: 'checkSquare' }]) },
       { group: 'ERP', items: ['erp', 'search'].map(k => ({ href: '#/soon/' + k, label: SOON[k].label, icon: SOON[k].icon, soon: true })) }];
     if (isAdmin()) ['Masters', 'Settings', 'Admin'].forEach(g => m.push({ group: g, items: S.order.filter(t => S.schema[t].group === g).map(t => ({ href: '#/m/' + t, label: S.schema[t].title, icon: S.schema[t].icon })) }));
     return m;
@@ -271,7 +275,7 @@
         '<a class="step' + (s[1] ? ' done' : '') + '" href="' + s[3] + '" style="color:inherit;text-decoration:none"><span class="step-dot">' + icon(s[1] ? 'check' : 'chevronRight') + '</span><div><strong>' + esc(s[0]) + '</strong><small>' + esc(s[2]) + '</small></div></a>').join('') + '</div></div>';
     }
     const road = '<div class="card card-pad"><h3 class="section-title">What is coming</h3><ul class="roadmap">' +
-      ['Phase 3 - Fabric entry and "Create FG" (this version)', 'Phase 1 - Login, masters, settings and users (done)', 'Phase 2 - FG entry and My Requests (done)', 'Phase 4 - Excel approval and notifications', 'Phase 5 - ERP export and ERP code mapping', 'Phase 6 - Nightly archive and item search']
+      ['Phase 4 - Excel approval, item lines and notifications (this version)', 'Phase 1 - Login, masters, settings and users (done)', 'Phase 2 - FG entry and My Requests (done)', 'Phase 3 - Fabric entry and "Create FG" (done)', 'Phase 5 - ERP export and ERP code mapping', 'Phase 6 - Nightly archive and item search']
         .map((t, i) => '<li>' + (i === 0 ? '<strong>' + esc(t) + '</strong>' : esc(t)) + '</li>').join('') + '</ul></div>';
     $('#content').innerHTML =
       '<div class="card hero"><div><h2>' + greet + ', ' + esc((u.FullName || u.Username).split(' ')[0]) + '</h2><p>' + (isAdmin() ? 'Set up the masters below, then merchandisers can start creating items.' : 'Create a new design or check your requests. Your categories:') + '</p><div class="chips">' + cats + '</div><div class="hero-actions"><a class="btn" href="#/fg">' + icon('filePlus') + 'New FG design</a><a class="btn" href="#/fabric">' + icon('scroll') + 'New fabric design</a><a class="btn btn-glass" href="#/requests">' + icon('inbox') + 'My requests</a></div></div></div>' +

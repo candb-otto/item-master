@@ -76,6 +76,10 @@
         <button class="icon-btn menu-toggle" id="menuToggle" title="Expand menu" aria-label="Expand or collapse menu"><span data-icon="menu"></span></button>
         <div class="top-title"><span class="crumb" id="crumb"></span><h1 id="pageTitle">Home</h1></div>
         <div class="top-actions">
+          <div class="bell-wrap">
+            <button class="icon-btn" id="bellBtn" title="Notifications" aria-label="Notifications"><span data-icon="bell"></span><span class="bell-badge" id="bellBadge" hidden></span></button>
+            <div class="menu bell-panel" id="bellPanel" hidden></div>
+          </div>
           <button class="icon-btn" id="refreshBtn" title="Reload from the Google Sheet"><span data-icon="refresh"></span></button>
           <div class="user-menu">
             <button class="user-btn" id="userBtn"><span class="avatar" id="avatar"></span><span class="user-name" id="userName"></span><span data-icon="chevronDown"></span></button>
@@ -107,5 +111,6 @@
 
   <script src="app.js"></script>
   <script src="entry.js"></script>
+  <script src="approvals.js"></script>
 </body>
 </html>

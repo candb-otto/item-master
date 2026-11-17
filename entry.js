@@ -359,6 +359,7 @@
     const b = $('#submitBtn'); b.disabled = true; b.innerHTML = icon('loader', 'spin-i') + 'Submitting...';
     try {
       const r = (await IM.api('/api/request/save', { row: payload() })).request;
+      if (IM.refreshBell) IM.refreshBell();
       const wasEdit = !!F.RequestID, wasFrom = fromFab(), kind = F.ItemKind;
       if (!F.locked) IM.store.set(lastKey(), JSON.stringify({ SeasonID: F.SeasonID, CategoryID: F.CategoryID, SupplierID: F.SupplierID, FabricTypeID: F.FabricTypeID }));
       const what = kind === 'Fabric' ? '<strong>' + esc(r.Colours.length) + '</strong> colour' + (r.Colours.length === 1 ? '' : 's') : '<strong>' + esc(r.LineCount) + '</strong> item lines';
@@ -420,6 +421,7 @@
     body.querySelectorAll('[data-page]').forEach(b => b.onclick = () => { RQ.page = Number(b.dataset.page); loadRequests(); });
   }
 
+  IM.openRequest = id => openRequest(id);
   async function openRequest(id) {
     const d = IM.showDrawer({ kicker: 'Request ' + id, title: 'Loading...', body: '<div class="loading">' + icon('loader') + '</div>' });
     let r;
