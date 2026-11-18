@@ -419,3 +419,4 @@ label.btn { cursor: pointer; }
   .pager { justify-content: center; }
   .pager .info { width: 100%; text-align: center; margin: 0 0 6px; }
 }
+.forgot { font-size: 12px; text-align: center; margin: 0 !important; }

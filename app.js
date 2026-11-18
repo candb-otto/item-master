@@ -383,7 +383,7 @@
     }
     const err = document.createElement('div'); err.className = 'form-error'; err.hidden = true; form.appendChild(err);
     const foot = $('#drawerFoot');
-    foot.innerHTML = (tab === 'Users' && row ? '<button class="btn btn-ghost" type="button" id="resetPw">' + icon('key') + 'Reset password</button>' : '') +
+    foot.innerHTML = (tab === 'Users' && row && row.UserID !== S.user.UserID ? '<button class="btn btn-ghost" type="button" id="resetPw">' + icon('key') + 'Reset password</button>' : '') +
       '<span class="grow"></span><button class="btn" type="button" data-close>Cancel</button><button class="btn btn-primary" type="button" id="saveBtn">' + icon('check') + (isNew ? 'Add' : 'Save') + '</button>';
     const wrap = $('#drawerWrap'); wrap.hidden = false; hydrate(wrap);
     closeDrawer = () => { wrap.hidden = true; form.innerHTML = ''; };
