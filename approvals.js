@@ -17,6 +17,7 @@
   const money = v => (v === '' || v === null || v === undefined || isNaN(v)) ? '-' : '₹' + Number(v).toLocaleString('en-IN', { maximumFractionDigits: 2 });
 
   let xlsxLoading = null;
+  IM.loadXlsx = () => loadXlsx();
   function loadXlsx() {
     if (window.XLSX) return Promise.resolve(window.XLSX);
     if (!xlsxLoading) xlsxLoading = new Promise((res, rej) => {
@@ -83,7 +84,7 @@
   const COLS = [
     ['Request ID', 13], ['Approve (Yes / No)', 16], ['Kind', 8], ['Item type', 10], ['Design no.', 14], ['Season', 9], ['Category', 20], ['Supplier', 22],
     ['Supplier item code', 18], ['Fabric type', 14], ['Colours (supplier colour no.)', 32], ['Fits', 18], ['Sizes', 22], ['Item lines', 9], ['MRP', 9],
-    ['Margin %', 9], ['Width', 10], ['Metres', 10], ['From fabric', 12], ['Created by', 13], ['Created at', 17]];
+    ['Margin %', 9], ['CP / Rate', 10], ['Width', 10], ['Metres', 10], ['From fabric', 12], ['Created by', 13], ['Created at', 17]];
   async function download() {
     const b = $('#apDown'); b.disabled = true; b.innerHTML = icon('loader', 'spin-i') + 'Preparing...';
     try {
@@ -92,7 +93,7 @@
         x.RequestID, 'Yes', x.ItemKind, x.ItemType, x.DesignNo, x.SeasonCode, nm.cat(x.CategoryID), nm.sup(x.SupplierID), x.SupplierItemCode, nm.fab(x.FabricTypeID),
         x.Colours.map(c => nm.col(c.c) + (c.n ? ' (' + c.n + ')' : '') + (x.ItemKind === 'Fabric' ? ' ' + c.m + ' m' : '')).join(', '),
         ids(x.Fits).map(nm.fit).join(', '), ids(x.Sizes).map(nm.size).join(', '), Number(x.LineCount) || 0,
-        x.ItemKind === 'FG' ? Number(x.BaseMRP) : '', x.ItemKind === 'FG' ? Number(x.MarginUsed) : '', x.Width || '', x.ItemKind === 'Fabric' ? x.TotalMetres : '',
+        x.ItemKind === 'FG' ? Number(x.BaseMRP) : '', x.ItemKind === 'FG' ? Number(x.MarginUsed) : '', x.Cost === '' || x.Cost === undefined ? '' : Number(x.Cost), x.Width || '', x.ItemKind === 'Fabric' ? x.TotalMetres : '',
         x.SourceDesign || '', x.CreatedBy, x.CreatedAt]);
       const ws = X.utils.aoa_to_sheet([COLS.map(c => c[0])].concat(data));
       ws['!cols'] = COLS.map(c => ({ wch: c[1] }));

@@ -174,14 +174,13 @@
 
   // ------------------------------------------------------------ navigation
   const SOON = {
-    erp: { label: 'ERP Export & Codes', icon: 'barcode', phase: 'Phase 5', text: 'Export approved items in the ERP bulk upload format and upload the ERP item codes back. Waiting for the ERP template from the client.' },
     search: { label: 'Item Search', icon: 'search', phase: 'Phase 6', text: 'Search active and archived items, and download a season.' },
   };
   function navModel() {
     const m = [{ items: [{ href: '#/home', label: 'Home', icon: 'home' }] },
       { group: 'Item entry', items: [{ href: '#/fg', label: 'FG Entry', icon: 'filePlus' }, { href: '#/fabric', label: 'Fabric Entry', icon: 'scroll' }, { href: '#/requests', label: 'My Requests', icon: 'inbox' }]
         .concat([{ href: '#/approvals', label: 'Approvals', icon: 'checkSquare' }]) },
-      { group: 'ERP', items: ['erp', 'search'].map(k => ({ href: '#/soon/' + k, label: SOON[k].label, icon: SOON[k].icon, soon: true })) }];
+      { group: 'ERP', items: (isAdmin() ? [{ href: '#/erp', label: 'ERP Export', icon: 'barcode' }] : []).concat(['search'].map(k => ({ href: '#/soon/' + k, label: SOON[k].label, icon: SOON[k].icon, soon: true }))) }];
     if (isAdmin()) ['Masters', 'Settings', 'Admin'].forEach(g => m.push({ group: g, items: S.order.filter(t => S.schema[t].group === g).map(t => ({ href: '#/m/' + t, label: S.schema[t].title, icon: S.schema[t].icon })) }));
     return m;
   }
@@ -275,7 +274,7 @@
         '<a class="step' + (s[1] ? ' done' : '') + '" href="' + s[3] + '" style="color:inherit;text-decoration:none"><span class="step-dot">' + icon(s[1] ? 'check' : 'chevronRight') + '</span><div><strong>' + esc(s[0]) + '</strong><small>' + esc(s[2]) + '</small></div></a>').join('') + '</div></div>';
     }
     const road = '<div class="card card-pad"><h3 class="section-title">What is coming</h3><ul class="roadmap">' +
-      ['Phase 4 - Excel approval, item lines and notifications (this version)', 'Phase 1 - Login, masters, settings and users (done)', 'Phase 2 - FG entry and My Requests (done)', 'Phase 3 - Fabric entry and "Create FG" (done)', 'Phase 5 - ERP export and ERP code mapping', 'Phase 6 - Nightly archive and item search']
+      ['Phase 5a - ERP export in the client upload format (this version)', 'Phase 1 to 4 - Login, masters, FG and fabric entry, Excel approval (done)', 'Phase 5b - ERP item codes back into the app (waiting for a sample ERP file)', 'Phase 6 - Nightly archive and item search']
         .map((t, i) => '<li>' + (i === 0 ? '<strong>' + esc(t) + '</strong>' : esc(t)) + '</li>').join('') + '</ul></div>';
     $('#content').innerHTML =
       '<div class="card hero"><div><h2>' + greet + ', ' + esc((u.FullName || u.Username).split(' ')[0]) + '</h2><p>' + (isAdmin() ? 'Set up the masters below, then merchandisers can start creating items.' : 'Create a new design or check your requests. Your categories:') + '</p><div class="chips">' + cats + '</div><div class="hero-actions"><a class="btn" href="#/fg">' + icon('filePlus') + 'New FG design</a><a class="btn" href="#/fabric">' + icon('scroll') + 'New fabric design</a><a class="btn btn-glass" href="#/requests">' + icon('inbox') + 'My requests</a></div></div></div>' +

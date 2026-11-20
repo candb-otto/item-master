@@ -420,3 +420,14 @@ label.btn { cursor: pointer; }
   .pager .info { width: 100%; text-align: center; margin: 0 0 6px; }
 }
 .forgot { font-size: 12px; text-align: center; margin: 0 !important; }
+
+/* ERP export */
+.erp-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; margin-bottom: 20px; }
+.erp-card { display: flex; flex-direction: column; gap: 14px; }
+.erp-card-head { display: flex; gap: 12px; align-items: center; }
+.erp-card-head small { display: block; color: var(--ash-600); font-size: 12px; }
+.erp-count { display: flex; gap: 28px; }
+.erp-count b { display: block; font-size: 26px; line-height: 1.1; }
+.erp-count span { color: var(--ash-600); font-size: 13px; }
+.erp-warn { margin: 8px 0; padding-left: 20px; font-size: 13px; }
+.erp-warn li { margin-bottom: 6px; }

@@ -66,14 +66,14 @@
       if (!r.CanEdit) { content.innerHTML = emptyCard('lock', reqId + ' is ' + r.Status + ' and can no longer be edited.'); return; }
       F = { RequestID: r.RequestID, Status: r.Status, Remarks: r.Remarks, locked: true, ItemKind: r.ItemKind, ItemType: r.ItemType, SeasonID: r.SeasonID, CategoryID: r.CategoryID, SupplierID: r.SupplierID,
         FabricTypeID: r.FabricTypeID, DesignNo: r.DesignNo, SupplierItemCode: r.SupplierItemCode, Colours: r.Colours || [], Fits: ids(r.Fits), Sizes: ids(r.Sizes),
-        BaseMRP: r.BaseMRP, MarginPct: r.MarginPct, Width: r.Width, SourceDesign: r.SourceDesign };
+        BaseMRP: r.BaseMRP, MarginPct: r.MarginPct, Width: r.Width, SourceDesign: r.SourceDesign, Cost: r.Cost === undefined ? '' : r.Cost };
       if (r.SourceDesign) {   // FG made from fabric: load the fabric's colours so they can be ticked / unticked
         try { Object.assign(F, fabricColourState((await IM.api('/api/request?id=' + encodeURIComponent(r.SourceDesign))).request, r.RequestID)); }
         catch (e) { F.FabColours = F.Colours.slice(); F.Taken = {}; }
       }
     } else {
       let last = {}; try { last = JSON.parse(IM.store.get(lastKey()) || '{}'); } catch (e) { /* ignore */ }
-      F = { locked: false, ItemKind: kind, ItemType: 'Non-core', SeasonID: '', CategoryID: '', SupplierID: '', FabricTypeID: '', DesignNo: '', SupplierItemCode: '', Colours: [], Fits: [], Sizes: [], BaseMRP: '', MarginPct: '', Width: '', SourceDesign: '' };
+      F = { locked: false, ItemKind: kind, ItemType: 'Non-core', SeasonID: '', CategoryID: '', SupplierID: '', FabricTypeID: '', DesignNo: '', SupplierItemCode: '', Colours: [], Fits: [], Sizes: [], BaseMRP: '', MarginPct: '', Width: '', SourceDesign: '', Cost: '' };
       const seasons = rows('Seasons').filter(act);
       F.SeasonID = seasons.some(s => s.SeasonID === last.SeasonID) ? last.SeasonID : (seasons.length === 1 ? seasons[0].SeasonID : '');
       const cats = rows('Categories').filter(act);
@@ -110,7 +110,7 @@
     const fitOk = fitsFor(r.CategoryID).map(x => x.FitID), sizeOk = sizesFor(r.CategoryID).map(x => x.SizeID);
     F = Object.assign({ locked: true, fresh: true, ItemKind: 'FG', ItemType: r.ItemType, SeasonID: r.SeasonID, CategoryID: r.CategoryID, SupplierID: r.SupplierID, FabricTypeID: r.FabricTypeID,
       DesignNo: r.DesignNo, SupplierItemCode: r.SupplierItemCode, Colours: free.map(x => ({ c: x.c, n: x.n })),
-      Fits: ids(c.DefaultFits).filter(x => fitOk.includes(x)), Sizes: ids(c.DefaultSizes).filter(x => sizeOk.includes(x)), BaseMRP: '', MarginPct: '', Width: '', SourceDesign: r.RequestID }, st);
+      Fits: ids(c.DefaultFits).filter(x => fitOk.includes(x)), Sizes: ids(c.DefaultSizes).filter(x => sizeOk.includes(x)), BaseMRP: '', MarginPct: '', Width: '', SourceDesign: r.RequestID, Cost: '' }, st);
     lastPreview = { designNo: r.DesignNo, errors: [] };
     drawForm();
   }
@@ -161,7 +161,8 @@
     const dn = (F.ItemType === 'Core' && !L)
       ? '<label class="field"><span>Design number<i class="req">*</i></span><input class="input code" id="fDesignNo" value="' + esc(F.DesignNo) + '" maxlength="30" placeholder="Type the design number"><small>Core items: type the design number.</small></label>'
       : '';
-    const width = fab ? '<label class="field"><span>Width<i class="req">*</i></span><input class="input" id="fWidth" value="' + esc(F.Width) + '" maxlength="30" placeholder="e.g. 58 inch"></label>' : '';
+    const width = fab ? '<label class="field"><span>Width<i class="req">*</i></span><input class="input" id="fWidth" value="' + esc(F.Width) + '" maxlength="30" placeholder="e.g. 58 inch"></label>' +
+      '<label class="field"><span>Rate per metre (₹)<i class="req">*</i></span><input class="input" id="fCost" type="number" min="0" step="any" inputmode="decimal" value="' + esc(F.Cost) + '" placeholder="ERP RATE"></label>' : '';
 
     let colourSection;
     if (fromFab()) {
@@ -191,6 +192,7 @@
         : '<p class="muted">Choose a category first.</p>') + '</section>' +
       '<section class="card card-pad"><h3 class="section-title">' + icon('coins') + 'Price</h3><div class="form-grid">' +
       '<label class="field"><span>MRP (₹)<i class="req">*</i></span><input class="input" id="fMrp" type="number" min="1" step="any" inputmode="decimal" value="' + esc(F.BaseMRP) + '" placeholder="Base MRP"></label>' +
+      '<label class="field"><span>CP - cost price (₹)<i class="req">*</i></span><input class="input" id="fCost" type="number" min="0" step="any" inputmode="decimal" value="' + esc(F.Cost) + '" placeholder="ERP CP"></label>' +
       '<label class="field"><span>Margin % (optional)</span><input class="input" id="fMargin" type="number" min="0" step="any" inputmode="decimal" value="' + esc(F.MarginPct) + '" placeholder="' + (c.MarginPct !== undefined && c.MarginPct !== '' ? 'Standard ' + esc(c.MarginPct) + '%' : 'Category standard') + '"></label></div>' +
       '<div id="priceBox"></div></section>';
 
@@ -223,6 +225,7 @@
     on('fDesignNo', 'input', e => { F.DesignNo = e.target.value.toUpperCase(); drawSummary(); schedulePreview(); });
     on('fSupCode', 'input', e => { F.SupplierItemCode = e.target.value; drawSummary(); schedulePreview(); });
     on('fWidth', 'input', e => { F.Width = e.target.value; drawSummary(); schedulePreview(); });
+    on('fCost', 'input', e => { F.Cost = e.target.value; drawSummary(); schedulePreview(); });
     on('fMrp', 'input', e => { F.BaseMRP = e.target.value; drawPrices(); drawSummary(); schedulePreview(); });
     on('fMargin', 'input', e => { F.MarginPct = e.target.value; drawPrices(); drawSummary(); schedulePreview(); });
     on('colSearch', 'input', () => drawColours(true));
@@ -322,7 +325,8 @@
       '<dt>Category</dt><dd>' + esc(F.CategoryID ? name.cat(F.CategoryID) : '-') + '</dd>' +
       '<dt>Supplier</dt><dd>' + esc(F.SupplierID ? name.sup(F.SupplierID) : '-') + '</dd>' +
       '<dt>Supplier item code</dt><dd>' + esc(F.SupplierItemCode || '-') + '</dd>' +
-      (fab ? '<dt>Width</dt><dd>' + esc(F.Width || '-') + '</dd>' : '') + '</dl>' +
+      (fab ? '<dt>Width</dt><dd>' + esc(F.Width || '-') + '</dd>' : '') +
+      '<dt>' + (fab ? 'Rate / metre' : 'CP') + '</dt><dd>' + (Number(F.Cost) > 0 ? esc(money(F.Cost)) : '-') + '</dd></dl>' +
       (fab
         ? '<div class="sum-count"><div><b>' + nCol + '</b><span>colours</span></div><i>·</i><div class="tot"><b>' + esc(metres(totalM())) + '</b><span>total quantity</span></div></div>'
         : '<div class="sum-count"><div><b>' + nCol + '</b><span>colour' + (nCol === 1 ? '' : 's') + '</span></div><i>×</i><div><b>' + nFit + '</b><span>fits</span></div><i>×</i><div><b>' + nSize + '</b><span>sizes</span></div><i>=</i><div class="tot"><b>' + lines + '</b><span>item lines</span></div></div>') +
@@ -347,16 +351,17 @@
     if (fab && !String(F.Width || '').trim()) E.push('Enter the fabric width.');
     if (!F.Colours.length) E.push('Choose at least one colour.');
     else if (c.SupplierColourRule === 'Mandatory' && F.Colours.some(x => !x.n)) E.push('Enter the supplier colour no. for every colour.');
-    if (fab) { if (F.Colours.some(x => !(Number(x.m) > 0))) E.push('Enter the quantity in metres for every colour.'); return E; }
+    if (fab) { if (F.Colours.some(x => !(Number(x.m) > 0))) E.push('Enter the quantity in metres for every colour.'); if (!(Number(F.Cost) > 0)) E.push('Enter the rate per metre.'); return E; }
     if (!F.Fits.length) E.push('Choose at least one fit.');
     if (!F.Sizes.length) E.push('Choose at least one size.');
     if (!(Number(F.BaseMRP) > 0)) E.push('Enter the MRP.');
+    if (!(Number(F.Cost) > 0)) E.push('Enter the CP (cost price).');
     return E;
   }
   function payload() {
     return { RequestID: F.RequestID, ItemKind: F.ItemKind, ItemType: F.ItemType, SeasonID: F.SeasonID, CategoryID: F.CategoryID, SupplierID: F.SupplierID, FabricTypeID: F.FabricTypeID,
       DesignNo: F.DesignNo, SupplierItemCode: F.SupplierItemCode, Colours: F.Colours, Fits: F.Fits.join(', '), Sizes: F.Sizes.join(', '), BaseMRP: F.BaseMRP, MarginPct: F.MarginPct,
-      Width: F.Width, SourceDesign: F.SourceDesign, FromColours: F.SourceDesign ? F.Colours.map(x => x.c) : undefined };
+      Width: F.Width, Cost: F.Cost, SourceDesign: F.SourceDesign, FromColours: F.SourceDesign ? F.Colours.map(x => x.c) : undefined };
   }
   // ask the server for the next design number and the duplicate check (it has every request)
   // Every change bumps formV; server messages are shown only when they answer the form as it is now.
@@ -372,7 +377,7 @@
     }, delay === undefined ? 450 : delay);
   }
   function clearDetails() {
-    F.SupplierItemCode = ''; F.DesignNo = ''; F.BaseMRP = ''; F.MarginPct = ''; F.Width = ''; F.Colours = []; F.AllM = '';
+    F.SupplierItemCode = ''; F.DesignNo = ''; F.BaseMRP = ''; F.MarginPct = ''; F.Width = ''; F.Cost = ''; F.Colours = []; F.AllM = '';
     const c = catRow() || {};
     F.Fits = ids(c.DefaultFits).filter(x => fitsFor(F.CategoryID).some(f => f.FitID === x));
     F.Sizes = ids(c.DefaultSizes).filter(x => sizesFor(F.CategoryID).some(s => s.SizeID === x));
@@ -465,7 +470,7 @@
       const action = !approved ? '<p class="note">' + icon('info') + '"Create FG" becomes available once this fabric design is approved.</p>'
         : free ? '<div class="fab-fg"><a class="btn btn-primary" href="#/fg/from/' + esc(r.RequestID) + '">' + icon('filePlus') + 'Create FG</a><span>' + free + ' of ' + r.Colours.length + ' colour' + (r.Colours.length === 1 ? '' : 's') + ' will be filled in' + (free < r.Colours.length ? ' (the others already have FG)' : '') + '.</span></div>'
           : '<p class="note">' + icon('check') + 'Every colour of this fabric already has FG.</p>';
-      d.form.innerHTML = top + '<dl class="kv">' + common + kv('Width', esc(r.Width)) + '</dl>' + action +
+      d.form.innerHTML = top + '<dl class="kv">' + common + kv('Width', esc(r.Width)) + kv('Rate / metre', r.Cost !== '' && r.Cost !== undefined ? esc(money(r.Cost)) : '-') + '</dl>' + action +
         '<div><h4 class="mini-title">Colours</h4><table class="grid mini"><thead><tr><th>Colour</th><th>Supplier colour no.</th><th class="num">Metres</th><th>FG</th></tr></thead><tbody>' +
         r.Colours.map(x => { const fg = fgFor(x.c); return '<tr><td><strong>' + esc(name.col(x.c)) + '</strong></td><td>' + esc(x.n || '-') + '</td><td class="num">' + esc(metres(x.m)) + '</td><td>' +
           (fg ? '<button type="button" class="link" data-open="' + esc(fg.RequestID) + '">' + esc(fg.RequestID) + '</button> ' + statusPill(fg.Status) : '<span class="muted">-</span>') + '</td></tr>'; }).join('') +
@@ -477,7 +482,7 @@
       const sizes = ids(r.Sizes), normal = sizes.filter(s => !big.includes(s)), bigSel = sizes.filter(s => big.includes(s)), extra = Number(c.BigSizeExtra) || 0;
       d.form.innerHTML = top +
         (r.SourceDesign ? '<p class="note">' + icon('scroll') + '<span>Made from fabric request <button type="button" class="link" data-open="' + esc(r.SourceDesign) + '">' + esc(r.SourceDesign) + '</button>.</span></p>' : '') +
-        '<dl class="kv">' + common + kv('Fits', IM.chipsHtml('Fits', r.Fits, 20)) + kv('Sizes', IM.chipsHtml('Sizes', r.Sizes, 30)) + '</dl>' +
+        '<dl class="kv">' + common + kv('Fits', IM.chipsHtml('Fits', r.Fits, 20)) + kv('Sizes', IM.chipsHtml('Sizes', r.Sizes, 30)) + kv('CP (cost price)', r.Cost !== '' && r.Cost !== undefined ? esc(money(r.Cost)) : '-') + '</dl>' +
         '<div><h4 class="mini-title">Colours</h4><table class="grid mini"><thead><tr><th>Colour</th><th>Supplier colour no.</th></tr></thead><tbody>' + r.Colours.map(x => '<tr><td>' + esc(name.col(x.c)) + '</td><td>' + esc(x.n || '-') + '</td></tr>').join('') + '</tbody></table></div>' +
         '<div><h4 class="mini-title">Price · margin ' + esc(m) + '%' + (r.MarginPct === '' ? ' (standard)' : '') + '</h4><table class="grid mini"><thead><tr><th>Sizes</th><th class="num">MRP</th><th class="num">WSP</th></tr></thead><tbody>' +
         (normal.length ? '<tr><td>' + esc(normal.map(name.size).join(', ')) + '</td><td class="num">' + money(mrp) + '</td><td class="num">' + money(wspFor(mrp, m)) + '</td></tr>' : '') +
