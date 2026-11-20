@@ -90,7 +90,7 @@
     try {
       const X = await loadXlsx();
       const data = AP.rows.map(x => [
-        x.RequestID, 'Yes', x.ItemKind, x.ItemType, x.DesignNo, x.SeasonCode, nm.cat(x.CategoryID), nm.sup(x.SupplierID), x.FabricSupplier || '', x.SupplierItemCode, nm.fab(x.FabricTypeID),
+        x.RequestID, 'Yes', x.ItemKind, x.ItemType, x.DesignNo, x.SeasonCode, nm.cat(x.CategoryID), nm.sup(x.SupplierID), x.FabricSupplier ? nm.sup(x.FabricSupplier) : '', x.SupplierItemCode, nm.fab(x.FabricTypeID),
         x.Colours.map(c => nm.col(c.c) + (c.n ? ' (' + c.n + ')' : '') + (x.ItemKind === 'Fabric' ? ' ' + c.m + ' m' : '')).join(', '),
         ids(x.Fits).map(nm.fit).join(', '), ids(x.Sizes).map(nm.size).join(', '), Number(x.LineCount) || 0,
         x.ItemKind === 'FG' ? Number(x.BaseMRP) : '', x.ItemKind === 'FG' ? Number(x.MarginUsed) : '', x.Cost === '' || x.Cost === undefined ? '' : Number(x.Cost), x.Width || '', x.ItemKind === 'Fabric' ? x.TotalMetres : '',
