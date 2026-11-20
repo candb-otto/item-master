@@ -424,7 +424,10 @@
       w.querySelectorAll('.seg button').forEach(b => b.onclick = () => { val[c.k] = b.textContent; w.querySelectorAll('.seg button').forEach(x => x.classList.toggle('on', x === b)); });
     } else if (c.t === 'ref') {
       const ridk = S.schema[c.ref].cols.find(x => x.t === 'id').k;
-      const opts = (S.data[c.ref] || []).filter(r => r.Active !== 'No' || r[ridk] === v).map(r => ({ id: r[ridk], t: labelOf(c.ref, r[ridk]) })).sort((a, b) => a.t.localeCompare(b.t));
+      // refFilter (e.g. FG article -> articles used for FG); rows with the field still blank are offered, marked "type not set"
+      const fit = r => !c.refFilter || Object.entries(c.refFilter).every(([k, want]) => !r[k] || r[k] === want);
+      const unset = r => c.refFilter && Object.keys(c.refFilter).some(k => !r[k]);
+      const opts = (S.data[c.ref] || []).filter(r => r[ridk] === v || (r.Active !== 'No' && fit(r))).map(r => ({ id: r[ridk], t: labelOf(c.ref, r[ridk]) + (unset(r) ? ' (type not set)' : '') })).sort((a, b) => a.t.localeCompare(b.t));
       w.innerHTML = lab + '<select class="input"><option value="">' + (opts.length ? 'None' : 'No ' + esc(S.schema[c.ref].title.toLowerCase()) + ' yet. Add them in ' + esc(S.schema[c.ref].title) + ' first.') + '</option>' +
         opts.map(o => '<option value="' + esc(o.id) + '"' + (o.id === v ? ' selected' : '') + '>' + esc(o.t) + '</option>').join('') + '</select>' + hint;
       const sel = w.querySelector('select'); sel.onchange = () => { val[c.k] = sel.value; };
