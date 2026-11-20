@@ -239,6 +239,7 @@
     if (!r) return id;
     if (tab === 'Categories') return r.Brand + ' - ' + r.Category;
     if (tab === 'Users') return r.FullName;
+    if (tab === 'Articles') return [r.Division, r.Section, r.Department].filter(x => String(x || '').trim()).join('-');
     const c = def.cols.find(c => c.t === 'text' || c.t === 'code');
     return String(r[c.k]);
   }
@@ -274,7 +275,7 @@
         '<a class="step' + (s[1] ? ' done' : '') + '" href="' + s[3] + '" style="color:inherit;text-decoration:none"><span class="step-dot">' + icon(s[1] ? 'check' : 'chevronRight') + '</span><div><strong>' + esc(s[0]) + '</strong><small>' + esc(s[2]) + '</small></div></a>').join('') + '</div></div>';
     }
     const road = '<div class="card card-pad"><h3 class="section-title">What is coming</h3><ul class="roadmap">' +
-      ['Phase 5a - ERP export in the client upload format (this version)', 'Phase 1 to 4 - Login, masters, FG and fabric entry, Excel approval (done)', 'Phase 5b - ERP item codes back into the app (waiting for a sample ERP file)', 'Phase 6 - Nightly archive and item search']
+      ['Phase 5a - ERP export in the client upload format, with Articles (this version)', 'Phase 1 to 4 - Login, masters, FG and fabric entry, Excel approval (done)', 'Phase 5b - ERP item codes back into the app (waiting for a sample ERP file)', 'Phase 6 - Nightly archive and item search']
         .map((t, i) => '<li>' + (i === 0 ? '<strong>' + esc(t) + '</strong>' : esc(t)) + '</li>').join('') + '</ul></div>';
     $('#content').innerHTML =
       '<div class="card hero"><div><h2>' + greet + ', ' + esc((u.FullName || u.Username).split(' ')[0]) + '</h2><p>' + (isAdmin() ? 'Set up the masters below, then merchandisers can start creating items.' : 'Create a new design or check your requests. Your categories:') + '</p><div class="chips">' + cats + '</div><div class="hero-actions"><a class="btn" href="#/fg">' + icon('filePlus') + 'New FG design</a><a class="btn" href="#/fabric">' + icon('scroll') + 'New fabric design</a><a class="btn btn-glass" href="#/requests">' + icon('inbox') + 'My requests</a></div></div></div>' +
@@ -345,6 +346,7 @@
   function cell(c, v, r, tab) {
     if (c.t === 'id') return '<td class="id-cell">' + esc(v) + '</td>';
     if (c.t === 'refs') return '<td>' + chipsHtml(c.ref, v) + '</td>';
+    if (c.t === 'ref') return '<td>' + (v ? esc(labelOf(c.ref, v)) : '<span class="muted">-</span>') + '</td>';
     if (c.t === 'bool') return '<td><span class="pill ' + (v === 'No' ? 'no">Inactive' : 'yes">Active') + '</span></td>';
     if (c.t === 'code') return '<td class="code-cell">' + esc(v) + '</td>';
     if (c.t === 'num' || c.t === 'int') return '<td class="num">' + esc(v === '' ? '-' : Number(v).toLocaleString('en-IN')) + '</td>';
@@ -420,6 +422,12 @@
     } else if (c.t === 'select') {
       w.innerHTML = lab + '<div class="seg">' + c.options.map(o => '<button type="button" class="' + (o === v ? 'on' : '') + '">' + esc(o) + '</button>').join('') + '</div>' + hint;
       w.querySelectorAll('.seg button').forEach(b => b.onclick = () => { val[c.k] = b.textContent; w.querySelectorAll('.seg button').forEach(x => x.classList.toggle('on', x === b)); });
+    } else if (c.t === 'ref') {
+      const ridk = S.schema[c.ref].cols.find(x => x.t === 'id').k;
+      const opts = (S.data[c.ref] || []).filter(r => r.Active !== 'No' || r[ridk] === v).map(r => ({ id: r[ridk], t: labelOf(c.ref, r[ridk]) })).sort((a, b) => a.t.localeCompare(b.t));
+      w.innerHTML = lab + '<select class="input"><option value="">' + (opts.length ? 'None' : 'No ' + esc(S.schema[c.ref].title.toLowerCase()) + ' yet. Add them in ' + esc(S.schema[c.ref].title) + ' first.') + '</option>' +
+        opts.map(o => '<option value="' + esc(o.id) + '"' + (o.id === v ? ' selected' : '') + '>' + esc(o.t) + '</option>').join('') + '</select>' + hint;
+      const sel = w.querySelector('select'); sel.onchange = () => { val[c.k] = sel.value; };
     } else if (c.t === 'refs') {
       w.innerHTML = lab + '<div class="pick"></div>' + hint;
       picker(w.querySelector('.pick'), tab, c, val, row);
@@ -427,7 +435,8 @@
       const type = (c.t === 'int' || c.t === 'num') ? 'number' : 'text';
       w.innerHTML = lab + '<input class="input' + (c.t === 'code' ? ' code' : '') + '" type="' + type + '"' + (c.max && c.t === 'code' ? ' maxlength="' + c.max + '"' : '') + (type === 'number' ? ' step="any" inputmode="decimal"' : '') + ' value="' + esc(v) + '"' + (c.lower ? ' autocapitalize="off" autocomplete="off"' : '') + '>' + hint;
       const inp = w.querySelector('input');
-      inp.oninput = () => { val[c.k] = c.t === 'code' ? inp.value.toUpperCase() : inp.value; };
+      if (c.upper) inp.style.textTransform = 'uppercase';
+      inp.oninput = () => { val[c.k] = c.t === 'code' || c.upper ? inp.value.toUpperCase() : inp.value; };
     }
     return w;
   }
