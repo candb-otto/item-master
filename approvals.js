@@ -82,7 +82,7 @@
 
   // ---------------------------------------------------------------- download
   const COLS = [
-    ['Request ID', 13], ['Approve (Yes / No)', 16], ['Kind', 8], ['Item type', 10], ['Design no.', 14], ['Season', 9], ['Category', 20], ['Supplier', 22],
+    ['Request ID', 13], ['Approve (Yes / No)', 16], ['Kind', 8], ['Item type', 10], ['Design no.', 14], ['Season', 9], ['Category', 20], ['Supplier (FG)', 22], ['Fabric supplier', 20],
     ['Supplier item code', 18], ['Fabric type', 14], ['Colours (supplier colour no.)', 32], ['Fits', 18], ['Sizes', 22], ['Item lines', 9], ['MRP', 9],
     ['Margin %', 9], ['CP / Rate', 10], ['Width', 10], ['Metres', 10], ['From fabric', 12], ['Created by', 13], ['Created at', 17]];
   async function download() {
@@ -90,7 +90,7 @@
     try {
       const X = await loadXlsx();
       const data = AP.rows.map(x => [
-        x.RequestID, 'Yes', x.ItemKind, x.ItemType, x.DesignNo, x.SeasonCode, nm.cat(x.CategoryID), nm.sup(x.SupplierID), x.SupplierItemCode, nm.fab(x.FabricTypeID),
+        x.RequestID, 'Yes', x.ItemKind, x.ItemType, x.DesignNo, x.SeasonCode, nm.cat(x.CategoryID), nm.sup(x.SupplierID), x.FabricSupplier || '', x.SupplierItemCode, nm.fab(x.FabricTypeID),
         x.Colours.map(c => nm.col(c.c) + (c.n ? ' (' + c.n + ')' : '') + (x.ItemKind === 'Fabric' ? ' ' + c.m + ' m' : '')).join(', '),
         ids(x.Fits).map(nm.fit).join(', '), ids(x.Sizes).map(nm.size).join(', '), Number(x.LineCount) || 0,
         x.ItemKind === 'FG' ? Number(x.BaseMRP) : '', x.ItemKind === 'FG' ? Number(x.MarginUsed) : '', x.Cost === '' || x.Cost === undefined ? '' : Number(x.Cost), x.Width || '', x.ItemKind === 'Fabric' ? x.TotalMetres : '',

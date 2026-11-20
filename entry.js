@@ -66,14 +66,14 @@
       if (!r.CanEdit) { content.innerHTML = emptyCard('lock', reqId + ' is ' + r.Status + ' and can no longer be edited.'); return; }
       F = { RequestID: r.RequestID, Status: r.Status, Remarks: r.Remarks, locked: true, ItemKind: r.ItemKind, ItemType: r.ItemType, SeasonID: r.SeasonID, CategoryID: r.CategoryID, SupplierID: r.SupplierID,
         FabricTypeID: r.FabricTypeID, DesignNo: r.DesignNo, SupplierItemCode: r.SupplierItemCode, Colours: r.Colours || [], Fits: ids(r.Fits), Sizes: ids(r.Sizes),
-        BaseMRP: r.BaseMRP, MarginPct: r.MarginPct, Width: r.Width, SourceDesign: r.SourceDesign, Cost: r.Cost === undefined ? '' : r.Cost };
+        BaseMRP: r.BaseMRP, MarginPct: r.MarginPct, Width: r.Width, SourceDesign: r.SourceDesign, Cost: r.Cost === undefined ? '' : r.Cost, FabricSupplier: r.FabricSupplier || '' };
       if (r.SourceDesign) {   // FG made from fabric: load the fabric's colours so they can be ticked / unticked
         try { Object.assign(F, fabricColourState((await IM.api('/api/request?id=' + encodeURIComponent(r.SourceDesign))).request, r.RequestID)); }
         catch (e) { F.FabColours = F.Colours.slice(); F.Taken = {}; }
       }
     } else {
       let last = {}; try { last = JSON.parse(IM.store.get(lastKey()) || '{}'); } catch (e) { /* ignore */ }
-      F = { locked: false, ItemKind: kind, ItemType: 'Non-core', SeasonID: '', CategoryID: '', SupplierID: '', FabricTypeID: '', DesignNo: '', SupplierItemCode: '', Colours: [], Fits: [], Sizes: [], BaseMRP: '', MarginPct: '', Width: '', SourceDesign: '', Cost: '' };
+      F = { locked: false, ItemKind: kind, ItemType: 'Non-core', SeasonID: '', CategoryID: '', SupplierID: '', FabricTypeID: '', DesignNo: '', SupplierItemCode: '', Colours: [], Fits: [], Sizes: [], BaseMRP: '', MarginPct: '', Width: '', SourceDesign: '', Cost: '', FabricSupplier: '' };
       const seasons = rows('Seasons').filter(act);
       F.SeasonID = seasons.some(s => s.SeasonID === last.SeasonID) ? last.SeasonID : (seasons.length === 1 ? seasons[0].SeasonID : '');
       const cats = rows('Categories').filter(act);
@@ -143,7 +143,7 @@
     const segs = (key, list, val, label) => '<div class="seg seg-wrap" data-seg="' + key + '">' + list.map(o => '<button type="button" data-v="' + esc(o.v) + '" class="' + (o.v === val ? 'on' : '') + '">' + esc(o.t) + '</button>').join('') + '</div>' + (list.length ? '' : '<small class="warn">' + esc(label) + '</small>');
 
     const head = L
-      ? '<div class="form-grid">' + lockedVal('Item type', F.ItemType) + lockedVal('Season', name.season(F.SeasonID)) + lockedVal('Category', name.cat(F.CategoryID)) + lockedVal('Supplier', name.sup(F.SupplierID)) + (F.FabricTypeID ? lockedVal('Fabric type', name.fab(F.FabricTypeID)) : '') + '</div>' +
+      ? '<div class="form-grid">' + lockedVal('Item type', F.ItemType) + lockedVal('Season', name.season(F.SeasonID)) + lockedVal('Category', name.cat(F.CategoryID)) + lockedVal(fab ? 'FG supplier' : 'Supplier', name.sup(F.SupplierID)) + (F.FabricTypeID ? lockedVal('Fabric type', name.fab(F.FabricTypeID)) : '') + '</div>' +
         '<p class="note">' + icon('info') + (fromFab()
           ? 'Made from approved fabric design ' + esc(F.DesignNo) + ' (' + esc(F.SourceDesign) + '): the design number, item type, season, category, supplier, fabric type and colour come from the fabric and cannot be changed.'
           : 'The design number is fixed, so item type, season, category, supplier and fabric type cannot be changed. Make a new design if one of these is wrong.') + '</p>'
@@ -151,7 +151,7 @@
         '<div class="field"><span>Season<i class="req">*</i></span>' + segs('SeasonID', seasons.map(s => ({ v: s.SeasonID, t: s.SeasonCode + ' · ' + s.SeasonName + ' ' + s.Year })), F.SeasonID, 'No active season. Ask your admin to add one.') + '</div>' +
         '<div class="field"><span>Category<i class="req">*</i></span>' + segs('CategoryID', cats.map(s => ({ v: s.CategoryID, t: s.Brand + ' - ' + s.Category })), F.CategoryID, 'No category.') + '</div>' +
         '<div class="form-grid">' +
-        '<label class="field"><span>Supplier<i class="req">*</i></span><select class="input" id="fSupplier"' + (F.CategoryID ? '' : ' disabled') + '><option value="">' + (F.CategoryID ? 'Choose supplier' : 'Choose a category first') + '</option>' +
+        '<label class="field"><span>' + (fab ? 'FG supplier' : 'Supplier') + '<i class="req">*</i></span><select class="input" id="fSupplier"' + (F.CategoryID ? '' : ' disabled') + '><option value="">' + (F.CategoryID ? (fab ? 'Choose FG supplier' : 'Choose supplier') : 'Choose a category first') + '</option>' +
         suppliersFor(F.CategoryID).map(s => '<option value="' + esc(s.SupplierID) + '"' + (s.SupplierID === F.SupplierID ? ' selected' : '') + '>' + esc(s.SupplierName + ' (' + s.Prefix + ')') + '</option>').join('') + '</select>' +
         (F.CategoryID && !suppliersFor(F.CategoryID).length ? '<small class="warn">No supplier is mapped to this category yet.</small>' : '') + '</label>' +
         (fabricRule() !== 'Off' ? '<div class="field"><span>Fabric type' + (fabricRule() === 'Mandatory' ? '<i class="req">*</i>' : ' (optional)') + '</span>' +
@@ -202,7 +202,8 @@
       '<div class="entry-main">' +
       '<section class="card card-pad"><h3 class="section-title">' + icon(fab ? 'scroll' : 'tag') + (fab ? 'Fabric design' : 'Design') + '</h3>' + head +
       '<div class="form-grid">' + dn +
-      '<label class="field"><span>Supplier item code<i class="req">*</i></span><input class="input" id="fSupCode" value="' + esc(F.SupplierItemCode) + '" maxlength="60" placeholder="As on the supplier\'s quote"></label>' + width + '</div></section>' +
+      '<label class="field"><span>Supplier item code<i class="req">*</i></span><input class="input" id="fSupCode" value="' + esc(F.SupplierItemCode) + '" maxlength="60" placeholder="As on the supplier\'s quote"></label>' + width +
+      (fab ? '<label class="field"><span>Fabric supplier (optional)</span><input class="input" id="fFabSup" value="' + esc(F.FabricSupplier || '') + '" maxlength="60" placeholder="For reference only"><small>Not used in the design number.</small></label>' : '') + '</div></section>' +
       '<section class="card card-pad"><h3 class="section-title">' + icon('palette') + (fromFab() ? 'Colours (from the fabric)' : 'Colours') + '</h3>' + colourSection + '</section>' +
       fgSections +
       '</div>' +
@@ -224,6 +225,7 @@
     on('fSupplier', 'change', e => { F.SupplierID = e.target.value; drawSummary(); schedulePreview(); });
     on('fDesignNo', 'input', e => { F.DesignNo = e.target.value.toUpperCase(); drawSummary(); schedulePreview(); });
     on('fSupCode', 'input', e => { F.SupplierItemCode = e.target.value; drawSummary(); schedulePreview(); });
+    on('fFabSup', 'input', e => { F.FabricSupplier = e.target.value; drawSummary(); });
     on('fWidth', 'input', e => { F.Width = e.target.value; drawSummary(); schedulePreview(); });
     on('fCost', 'input', e => { F.Cost = e.target.value; drawSummary(); schedulePreview(); });
     on('fMrp', 'input', e => { F.BaseMRP = e.target.value; drawPrices(); drawSummary(); schedulePreview(); });
@@ -323,7 +325,8 @@
       '<dl class="sum-list">' +
       '<dt>Season</dt><dd>' + esc(F.SeasonID ? name.season(F.SeasonID) : '-') + '</dd>' +
       '<dt>Category</dt><dd>' + esc(F.CategoryID ? name.cat(F.CategoryID) : '-') + '</dd>' +
-      '<dt>Supplier</dt><dd>' + esc(F.SupplierID ? name.sup(F.SupplierID) : '-') + '</dd>' +
+      '<dt>' + (fab ? 'FG supplier' : 'Supplier') + '</dt><dd>' + esc(F.SupplierID ? name.sup(F.SupplierID) : '-') + '</dd>' +
+      (fab ? '<dt>Fabric supplier</dt><dd>' + esc(F.FabricSupplier || '-') + '</dd>' : '') +
       '<dt>Supplier item code</dt><dd>' + esc(F.SupplierItemCode || '-') + '</dd>' +
       (fab ? '<dt>Width</dt><dd>' + esc(F.Width || '-') + '</dd>' : '') +
       '<dt>' + (fab ? 'Rate / metre' : 'CP') + '</dt><dd>' + (Number(F.Cost) > 0 ? esc(money(F.Cost)) : '-') + '</dd></dl>' +
@@ -343,7 +346,7 @@
     if (!F.locked) {
       if (!F.SeasonID) E.push('Choose a season.');
       if (!F.CategoryID) E.push('Choose a category.');
-      if (!F.SupplierID) E.push('Choose a supplier.');
+      if (!F.SupplierID) E.push(fab ? 'Choose the FG supplier.' : 'Choose a supplier.');
       if (fabricRule() === 'Mandatory' && !F.FabricTypeID) E.push('Choose a fabric type.');
       if (F.ItemType === 'Core' && !String(F.DesignNo).trim()) E.push('Type the design number.');
     }
@@ -361,7 +364,7 @@
   function payload() {
     return { RequestID: F.RequestID, ItemKind: F.ItemKind, ItemType: F.ItemType, SeasonID: F.SeasonID, CategoryID: F.CategoryID, SupplierID: F.SupplierID, FabricTypeID: F.FabricTypeID,
       DesignNo: F.DesignNo, SupplierItemCode: F.SupplierItemCode, Colours: F.Colours, Fits: F.Fits.join(', '), Sizes: F.Sizes.join(', '), BaseMRP: F.BaseMRP, MarginPct: F.MarginPct,
-      Width: F.Width, Cost: F.Cost, SourceDesign: F.SourceDesign, FromColours: F.SourceDesign ? F.Colours.map(x => x.c) : undefined };
+      Width: F.Width, Cost: F.Cost, FabricSupplier: F.FabricSupplier || '', SourceDesign: F.SourceDesign, FromColours: F.SourceDesign ? F.Colours.map(x => x.c) : undefined };
   }
   // ask the server for the next design number and the duplicate check (it has every request)
   // Every change bumps formV; server messages are shown only when they answer the form as it is now.
@@ -438,10 +441,10 @@
     $('#rqStatus').querySelectorAll('[data-st]').forEach(b => b.onclick = () => { RQ.status = b.dataset.st; RQ.page = 1; loadRequests(); });
     if (!r.rows.length) { body.innerHTML = '<div class="empty">' + icon(r.counts.All ? 'search' : 'inbox') + '<p>' + (r.counts.All ? 'Nothing matches your filters.' : 'No ' + (fab ? 'fabric' : 'FG') + ' requests yet. <a href="#/' + (fab ? 'fabric' : 'fg') + '">Create the first one</a>.') + '</p></div>'; return; }
     const head = fab
-      ? '<th>Design no.</th><th>Request</th><th>Type</th><th>Season</th><th>Category</th><th>Supplier</th><th>Supplier item code</th><th class="num">Colours</th><th class="num">Metres</th><th>Width</th><th>Status</th><th>Created</th>'
+      ? '<th>Design no.</th><th>Request</th><th>Type</th><th>Season</th><th>Category</th><th>FG supplier</th><th>Fabric supplier</th><th>Supplier item code</th><th class="num">Colours</th><th class="num">Metres</th><th>Width</th><th>Status</th><th>Created</th>'
       : '<th>Design no.</th><th>Request</th><th>Type</th><th>Season</th><th>Category</th><th>Supplier</th><th>Supplier item code</th><th class="num">Lines</th><th class="num">MRP</th><th>Status</th><th>Created</th>';
     body.innerHTML = '<div class="table-wrap"><table class="grid"><thead><tr>' + head + '</tr></thead><tbody>' +
-      r.rows.map(x => '<tr data-id="' + esc(x.RequestID) + '"><td class="code-cell">' + esc(x.DesignNo) + (x.SourceDesign ? '<small class="from-fab">from fabric</small>' : '') + '</td><td class="id-cell">' + esc(x.RequestID) + '</td><td>' + esc(x.ItemType) + '</td><td>' + esc(x.SeasonCode) + '</td><td>' + esc(name.cat(x.CategoryID)) + '</td><td>' + esc(name.sup(x.SupplierID)) + '</td><td>' + esc(x.SupplierItemCode) + '</td>' +
+      r.rows.map(x => '<tr data-id="' + esc(x.RequestID) + '"><td class="code-cell">' + esc(x.DesignNo) + (x.SourceDesign ? '<small class="from-fab">from fabric</small>' : '') + '</td><td class="id-cell">' + esc(x.RequestID) + '</td><td>' + esc(x.ItemType) + '</td><td>' + esc(x.SeasonCode) + '</td><td>' + esc(name.cat(x.CategoryID)) + '</td><td>' + esc(name.sup(x.SupplierID)) + '</td>' + (fab ? '<td>' + esc(x.FabricSupplier || '-') + '</td>' : '') + '<td>' + esc(x.SupplierItemCode) + '</td>' +
         (fab ? '<td class="num">' + esc(x.ColourCount) + '</td><td class="num">' + esc(metres(x.TotalMetres)) + '</td><td>' + esc(x.Width) + '</td>' : '<td class="num">' + esc(x.LineCount) + '</td><td class="num">' + money(x.BaseMRP) + '</td>') +
         '<td>' + statusPill(x.Status) + '</td><td><span class="who">' + esc(x.CreatedBy) + '</span><small class="muted">' + esc(x.CreatedAt) + '</small></td></tr>').join('') +
       '</tbody></table></div>' + IM.pager(r.page, r.pages, r.total, r.total);
@@ -459,7 +462,7 @@
     const kv = (k, v) => '<dt>' + esc(k) + '</dt><dd>' + v + '</dd>';
     const top = '<div class="detail-top">' + statusPill(r.Status) + '<span class="muted">' + esc(r.ItemType) + ' · ' + (r.ItemKind === 'Fabric' ? esc(r.Colours.length) + ' colours · ' + esc(metres(r.TotalMetres)) : esc(r.LineCount) + ' item lines') + '</span></div>' +
       (r.Status === 'Rejected' && r.Remarks ? '<div class="form-error">' + esc(r.Remarks) + '</div>' : '');
-    const common = kv('Season', esc(name.season(r.SeasonID))) + kv('Category', esc(name.cat(r.CategoryID))) + kv('Supplier', esc(name.sup(r.SupplierID))) + kv('Supplier item code', esc(r.SupplierItemCode)) +
+    const common = kv('Season', esc(name.season(r.SeasonID))) + kv('Category', esc(name.cat(r.CategoryID))) + (r.ItemKind === 'Fabric' ? kv('FG supplier', esc(name.sup(r.SupplierID))) + kv('Fabric supplier', esc(r.FabricSupplier || '-')) : kv('Supplier', esc(name.sup(r.SupplierID)))) + kv('Supplier item code', esc(r.SupplierItemCode)) +
       (r.FabricTypeID ? kv('Fabric type', esc(name.fab(r.FabricTypeID))) : '');
     const audit = '<div class="audit"><span>Created by ' + esc(r.CreatedBy) + ' on ' + esc(r.CreatedAt) + '</span>' + (r.UpdatedAt && r.UpdatedAt !== r.CreatedAt ? '<span>Last changed by ' + esc(r.UpdatedBy) + ' on ' + esc(r.UpdatedAt) + '</span>' : '') + (r.ApprovedAt ? '<span>' + esc(r.Status) + ' by ' + esc(r.ApprovedBy) + ' on ' + esc(r.ApprovedAt) + '</span>' : '') + '</div>';
 
