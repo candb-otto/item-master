@@ -115,8 +115,9 @@
     drawForm();
   }
 
-  const suppliersFor = cat => rows('Suppliers').filter(s => act(s) && cat && inCat(s, cat)).sort((a, b) => String(a.SupplierName).localeCompare(b.SupplierName));
-  const fabSuppliersFor = cat => suppliersFor(cat).filter(s => s.FabricSupplier === 'Yes');
+  const catSuppliers = cat => rows('Suppliers').filter(s => act(s) && cat && inCat(s, cat)).sort((a, b) => String(a.SupplierName).localeCompare(b.SupplierName));
+  const suppliersFor = cat => catSuppliers(cat).filter(s => String(s.Prefix || '').trim());   // FG supplier: needs a prefix (design number)
+  const fabSuppliersFor = cat => catSuppliers(cat).filter(s => s.FabricSupplier === 'Yes');
   const fabricsFor = cat => rows('FabricTypes').filter(s => act(s) && cat && inCat(s, cat));
   const coloursFor = cat => rows('Colours').filter(s => act(s) && cat && inCat(s, cat)).sort((a, b) => String(a.Colour).localeCompare(b.Colour));
   const fitsFor = cat => rows('Fits').filter(s => act(s) && cat && inCat(s, cat));

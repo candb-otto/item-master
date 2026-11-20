@@ -396,7 +396,7 @@
 
     async function save() {
       err.hidden = true;
-      const missing = fields.filter(c => c.req && (c.t === 'refs' ? !splitIds(val[c.k]).length : String(val[c.k] === undefined ? '' : val[c.k]).trim() === '')).map(c => c.label || c.k);
+      const missing = fields.filter(c => c.req && !(c.reqUnless && val[c.reqUnless[0]] === c.reqUnless[1]) && (c.t === 'refs' ? !splitIds(val[c.k]).length : String(val[c.k] === undefined ? '' : val[c.k]).trim() === '')).map(c => c.label || c.k);
       if (missing.length) { err.textContent = 'Please fill in: ' + missing.join(', ') + '.'; err.hidden = false; return; }
       const b = $('#saveBtn'); b.disabled = true; b.innerHTML = icon('loader', 'spin-i') + 'Saving...';
       try {
