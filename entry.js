@@ -116,6 +116,7 @@
   }
 
   const suppliersFor = cat => rows('Suppliers').filter(s => act(s) && cat && inCat(s, cat)).sort((a, b) => String(a.SupplierName).localeCompare(b.SupplierName));
+  const fabSuppliersFor = cat => suppliersFor(cat).filter(s => s.FabricSupplier === 'Yes');
   const fabricsFor = cat => rows('FabricTypes').filter(s => act(s) && cat && inCat(s, cat));
   const coloursFor = cat => rows('Colours').filter(s => act(s) && cat && inCat(s, cat)).sort((a, b) => String(a.Colour).localeCompare(b.Colour));
   const fitsFor = cat => rows('Fits').filter(s => act(s) && cat && inCat(s, cat));
@@ -132,7 +133,7 @@
     F.Sizes = ids(c.DefaultSizes).filter(x => sizeIds.includes(x));
     F.Colours = F.Colours.filter(x => colIds.includes(x.c));
     if (!suppliersFor(cat).some(s => s.SupplierID === F.SupplierID)) F.SupplierID = '';
-    if (!suppliersFor(cat).some(s => s.SupplierID === F.FabricSupplier)) F.FabricSupplier = '';
+    if (!fabSuppliersFor(cat).some(s => s.SupplierID === F.FabricSupplier)) F.FabricSupplier = '';
     if (!fabricsFor(cat).some(s => s.FabricTypeID === F.FabricTypeID) || (c.FabricTypeRule || 'Off') === 'Off') F.FabricTypeID = '';
   }
 
@@ -205,9 +206,9 @@
       '<div class="form-grid">' + dn +
       '<label class="field"><span>Supplier item code<i class="req">*</i></span><input class="input" id="fSupCode" value="' + esc(F.SupplierItemCode) + '" maxlength="60" placeholder="As on the supplier\'s quote"></label>' + width +
       (fab ? '<label class="field"><span>Fabric supplier (optional)</span><select class="input" id="fFabSup"' + (F.CategoryID ? '' : ' disabled') + '><option value="">' + (F.CategoryID ? 'Choose fabric supplier' : 'Choose a category first') + '</option>' +
-        (F.FabricSupplier && !suppliersFor(F.CategoryID).some(s => s.SupplierID === F.FabricSupplier) ? '<option value="' + esc(F.FabricSupplier) + '" selected>' + esc(name.sup(F.FabricSupplier)) + '</option>' : '') +
-        suppliersFor(F.CategoryID).map(s => '<option value="' + esc(s.SupplierID) + '"' + (s.SupplierID === F.FabricSupplier ? ' selected' : '') + '>' + esc(s.SupplierName) + '</option>').join('') +
-        '</select><small>For reference only. Not used in the design number.</small></label>' : '') + '</div></section>' +
+        (F.FabricSupplier && !fabSuppliersFor(F.CategoryID).some(s => s.SupplierID === F.FabricSupplier) ? '<option value="' + esc(F.FabricSupplier) + '" selected>' + esc(name.sup(F.FabricSupplier)) + '</option>' : '') +
+        fabSuppliersFor(F.CategoryID).map(s => '<option value="' + esc(s.SupplierID) + '"' + (s.SupplierID === F.FabricSupplier ? ' selected' : '') + '>' + esc(s.SupplierName) + '</option>').join('') +
+        '</select><small>' + (F.CategoryID && !fabSuppliersFor(F.CategoryID).length ? 'No fabric supplier for this category yet. In Suppliers, set Fabric supplier = Yes.' : 'For reference only. Not used in the design number.') + '</small></label>' : '') + '</div></section>' +
       '<section class="card card-pad"><h3 class="section-title">' + icon('palette') + (fromFab() ? 'Colours (from the fabric)' : 'Colours') + '</h3>' + colourSection + '</section>' +
       fgSections +
       '</div>' +
